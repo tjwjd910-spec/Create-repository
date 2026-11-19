@@ -1577,7 +1577,7 @@
         const h = document.createElement("div");
         h.className = "floor-chapter";
         h.style.setProperty("--cc", f.color);
-        h.innerHTML = "<i></i><em>" + f.chapter + "</em><span>" + f.floor + "~" + (f.floor + 3) + "F · " + f.waves + "웨이브</span>";
+        h.innerHTML = "<i></i><em>" + f.chapter + "</em><span>" + f.floor + "~" + (f.floor + 3) + "F</span>";
         wrap.appendChild(h);
       }
       const div = document.createElement("div");
