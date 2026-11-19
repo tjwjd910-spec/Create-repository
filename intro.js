@@ -559,7 +559,7 @@
       g.fill();
     }
     g.restore();
-    vignette(g, W, H, 0.55);
+    vignette(g, W, H, 0.45);
   }
 
   /* ============================================================ 컷신 그림 */
@@ -660,7 +660,7 @@
         }
       }
       embers(g, W, H * 0.62, t, 14, 31, "rgba(255,190,120,", true);
-      vignette(g, W, H, 0.5);
+      vignette(g, W, H, 0.42);
     },
 
     /* 2장 — 꺼져가는 왕국, 끌려가는 수호 기사단 */
@@ -710,7 +710,7 @@
       g.fillStyle = fg;
       g.fillRect(0, H * 0.57, W, H * 0.14);
       embers(g, W, H * 0.7, t, 26, 77, "rgba(255,90,90,", true);
-      vignette(g, W, H, 0.6);
+      vignette(g, W, H, 0.5);
     },
 
     /* 3장 — 왕관과 성검을 든 공주 */
@@ -812,7 +812,7 @@
         g.fillRect(cx2 - 1.2, cy2 - 5 - fl * 2, 2.4, 6 + fl * 2);
       });
       embers(g, W, H * 0.7, t, 12, 55, "rgba(255,225,170,", true);
-      vignette(g, W, H, 0.6);
+      vignette(g, W, H, 0.45);
     },
 
     /* 4장 — 새벽, 당신의 이야기가 시작된다 */
@@ -884,7 +884,7 @@
       g.fillRect(px - W * 0.06, py - H * 0.28, W * 0.34, H * 0.3);
       g.restore();
       embers(g, W, H * 0.8, t, 18, 91, "rgba(255,220,150,", true);
-      vignette(g, W, H, 0.45);
+      vignette(g, W, H, 0.38);
     },
   };
 
@@ -1388,7 +1388,8 @@
         if (el.nick.classList.contains("on") && nameKind === "change") el.nick.classList.remove("on");
       }
       if ((e.key === "Enter" || e.key === " ") && el.cut.classList.contains("on") && !el.nick.classList.contains("on")) {
-        if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === "INPUT" || ae.tagName === "BUTTON" || ae.tagName === "TEXTAREA")) return;
         e.preventDefault();
         if (bootReady) nextLine();
       }
