@@ -1238,6 +1238,61 @@
     return parts.join(" · ");
   }
 
+  function fmtDiff(v, dec, pct) {
+    return Math.abs(v).toFixed(dec) + (pct ? "%" : "");
+  }
+
+  // 카드용 비교 칩 — 착용 장비 대비 스탯 증감(초록▲/빨강▼) + 전투력 차이
+  function diffChips(it) {
+    const cmp = G.compareItem(it);
+    const chips = [];
+    cmp.deltas.forEach((d) => {
+      if (Math.abs(d.val) < (d.dec ? 0.05 : 0.5)) return;
+      const up = d.val > 0;
+      chips.push(
+        '<span class="df ' + (up ? "up" : "down") + '">' + (up ? "▲" : "▼") + d.label + " " +
+        (up ? "+" : "-") + fmtDiff(d.val, d.dec, d.pct) + "</span>"
+      );
+    });
+    if (cmp.power) {
+      const up = cmp.power > 0;
+      chips.push('<span class="df pw ' + (up ? "up" : "down") + '">전투력 ' + (up ? "+" : "-") + fmt(Math.abs(cmp.power)) + "</span>");
+    } else if (!chips.length) {
+      chips.push('<span class="df flat">현재 장비와 동급</span>');
+    }
+    return { cmp: cmp, html: chips.join("") };
+  }
+
+  // 가방에서 슬롯별로 지금 착용 장비보다 좋은 최선의 장비 찾기
+  function scanUpgrades() {
+    const out = [];
+    ["weapon", "armor", "acc"].forEach((slot) => {
+      let best = null;
+      let bestPw = 0;
+      S.inv.forEach((it) => {
+        if (it.slot !== slot) return;
+        const pw = G.previewStats(it).power - stats.power;
+        if (pw > bestPw) {
+          bestPw = pw;
+          best = it;
+        }
+      });
+      if (best) out.push({ slot: slot, it: best, power: bestPw });
+    });
+    return out;
+  }
+
+  // 추천 장착 버튼 라벨 + 가방 탭 알림 점 갱신
+  function updateBagTools() {
+    const ups = scanUpgrades();
+    const btn = $("#btnAutoEquip");
+    if (btn) {
+      btn.innerHTML = "✨ 추천 장착" + (ups.length ? ' <span class="cnt">' + ups.length + "</span>" : "");
+      btn.classList.toggle("has", ups.length > 0);
+    }
+    $("#dotBag").classList.toggle("show", ups.length > 0 && tab !== "bag");
+  }
+
   function renderBag() {
     const grid = $("#eqGrid");
     grid.innerHTML = "";
@@ -1274,6 +1329,7 @@
 
     $("#bagPower").textContent = "전투력 " + fmt(stats.power);
     $("#bagMeta").textContent = "장비 " + S.inv.length + " / 60 · 강화석 " + S.stones;
+    updateBagTools();
     const list = $("#invList");
     list.innerHTML = "";
     if (S.inv.length === 0) {
@@ -1283,13 +1339,18 @@
     const sorted = S.inv.slice().sort((a, b) => G.itemPower(b) - G.itemPower(a));
     sorted.slice(0, 40).forEach((it) => {
       const row = document.createElement("div");
-      row.className = "item-row r" + it.rarity;
+      const dc = diffChips(it);
+      const hot = dc.cmp.power >= Math.max(40, stats.power * 0.1);
+      row.className = "item-row r" + it.rarity + (dc.cmp.better ? " better" + (hot ? " hot" : "") : "");
       row.innerHTML =
         '<div class="ir-ico"></div>' +
         '<div class="ir-mid"><div class="ir-name">' + it.name +
         (it.lvl ? " <span style='color:var(--gold);font-family:var(--mono)'>+" + it.lvl + "</span>" : "") +
-        '</div><div class="ir-stat">' + itemStatsText(it) + "</div></div>" +
-        '<div class="ir-lv">' + G.SLOTS[it.slot].name + "</div>";
+        '</div><div class="ir-stat">' + itemStatsText(it) + "</div>" +
+        '<div class="ir-diff">' + dc.html + "</div></div>" +
+        '<div class="ir-right">' +
+        (dc.cmp.better ? '<span class="upb">▲ UP</span>' : "") +
+        '<span class="ir-lv">' + G.SLOTS[it.slot].name + "</span></div>";
       const ic = row.querySelector(".ir-ico");
       const spr = G.sprite(G.SLOTS[it.slot].icon, 2.2);
       if (spr) {
@@ -1311,15 +1372,33 @@
   }
 
   function showItemModal(it, equipped) {
-    const cur = S.eq[it.slot];
+    const cmp = G.compareItem(it);
+    const byKey = {};
+    cmp.deltas.forEach((d) => (byKey[d.key] = d));
     const m = 1 + (it.lvl || 0) * 0.1;
-    const delta = G.itemPower(it) - (cur && cur !== it ? G.itemPower(cur) : 0);
+    const deltaTag = (key) => {
+      const d = byKey[key];
+      if (!d || Math.abs(d.val) < (d.dec ? 0.05 : 0.5)) return "";
+      const up = d.val > 0;
+      return ' <i class="dl ' + (up ? "up" : "down") + '">' + (up ? "▲+" : "▼-") + fmtDiff(d.val, d.dec, d.pct) + "</i>";
+    };
+    const after = stats.power + cmp.power;
+    const cmpBox = () =>
+      '<div class="cmp-box ' + (cmp.better ? "up" : cmp.power < 0 ? "down" : "") + '">' +
+      '<div class="cmp-name">' +
+      (cmp.cur
+        ? '현재 착용 <b style="color:' + G.RARITY[cmp.cur.rarity].color + '">' + cmp.cur.name + (cmp.cur.lvl ? " +" + cmp.cur.lvl : "") + "</b>"
+        : "빈 슬롯 — 장착하면 모든 능력치가 그대로 오릅니다") +
+      "</div>" +
+      '<div class="cmp-pw">전투력 <b>' + fmt(stats.power) + "</b> → <b class='af'>" + fmt(after) + "</b>" +
+      '<span class="pwd ' + (cmp.better ? "up" : cmp.power < 0 ? "down" : "") + '">' +
+      (cmp.power >= 0 ? "▲+" : "▼-") + fmt(Math.abs(cmp.power)) + "</span></div></div>";
     const lines = [];
-    if (it.atk) lines.push(["공격력", "+" + Math.round(it.atk * m)]);
-    if (it.hp) lines.push(["최대 체력", "+" + Math.round(it.hp * m)]);
-    if (it.def) lines.push(["방어력", "+" + (it.def * m).toFixed(1)]);
-    if (it.crit) lines.push(["치명타 확률", "+" + (it.crit * m).toFixed(1) + "%"]);
-    if (it.critDmg) lines.push(["치명타 피해", "+" + Math.round(it.critDmg * m) + "%"]);
+    if (it.atk) lines.push(["공격력", "+" + Math.round(it.atk * m), "atk"]);
+    if (it.hp) lines.push(["최대 체력", "+" + Math.round(it.hp * m), "hp"]);
+    if (it.def) lines.push(["방어력", "+" + (it.def * m).toFixed(1), "def"]);
+    if (it.crit) lines.push(["치명타 확률", "+" + (it.crit * m).toFixed(1) + "%", "crit"]);
+    if (it.critDmg) lines.push(["치명타 피해", "+" + Math.round(it.critDmg * m) + "%", "critDmg"]);
     const c = G.enhanceCost(it);
     openModal({
       title: "",
@@ -1329,11 +1408,9 @@
         '<div class="ih-r" style="color:' + G.RARITY[it.rarity].color + '">' + G.RARITY[it.rarity].name + " · " +
         G.SLOTS[it.slot].name + " · Lv." + it.ilvl + "</div></div></div>" +
         '<div class="stat-lines">' +
-        lines.map((l) => "<div><span>" + l[0] + "</span><b class='good'>" + l[1] + "</b></div>").join("") +
+        lines.map((l) => "<div><span>" + l[0] + "</span><b class='good'>" + l[1] + deltaTag(l[2]) + "</b></div>").join("") +
         "</div>" +
-        (cur && cur !== it
-          ? '<div class="cmp">현재 장착 대비 전투력 <b class="' + (delta < 0 ? "down" : "") + '">' + (delta >= 0 ? "+" : "") + delta + "</b></div>"
-          : "") +
+        (cmp.equipped ? '<div class="cmp-box"><div class="cmp-name">현재 장착 중인 장비입니다</div></div>' : cmpBox()) +
         '<div class="cmp">강화 ' + (it.lvl || 0) + "/10 · 다음 강화 강화석 " + c.stones + "개 · 골드 " + fmt(c.gold) + "</div>",
       rows: equipped
         ? [
@@ -1395,12 +1472,12 @@
     if (name === "grow") renderGrow();
     if (name === "bag") {
       renderBag();
-      bagDot(false);
+      updateBagTools();
     }
   }
 
-  function bagDot(on) {
-    $("#dotBag").classList.toggle("show", !!on);
+  function bagDot() {
+    updateBagTools();
   }
 
   function maybeDot() {
@@ -1412,6 +1489,7 @@
     $("#dotDungeon").classList.toggle("show", show && tab !== "dungeon");
     const canUp = G.UPGRADES.some((u) => (S.up[u.id] || 0) < u.max && S.gold >= upgradeCost(u.id));
     $("#dotGrow").classList.toggle("show", canUp && tab !== "grow");
+    bagDot();
   }
 
   function renderAll() {
@@ -1523,6 +1601,35 @@
       S.inv.sort((a, b) => G.itemPower(b) - G.itemPower(a));
       renderBag();
       toast("전투력 순으로 정렬했습니다");
+    };
+    $("#btnAutoEquip").onclick = () => {
+      const before = stats.power;
+      let n = 0;
+      ["weapon", "armor", "acc"].forEach((slot) => {
+        let best = null;
+        let bestPw = 0;
+        S.inv.slice().forEach((it) => {
+          if (it.slot !== slot) return;
+          const pw = G.previewStats(it).power - stats.power;
+          if (pw > bestPw) {
+            bestPw = pw;
+            best = it;
+          }
+        });
+        if (best) {
+          G.equipItem(best);
+          stats = G.computeStats();
+          n++;
+        }
+      });
+      if (!n) {
+        toast("이미 가장 좋은 장비를 착용 중입니다");
+        return;
+      }
+      renderAll();
+      save();
+      sfx("levelup");
+      toast("더 좋은 장비 " + n + "개 장착 · 전투력 +" + fmt(stats.power - before), "gold");
     };
     $("#btnSalvage").onclick = () => {
       const rank = { weapon: 0, armor: 1, acc: 2 };

@@ -690,6 +690,42 @@
   }
   G.itemPower = itemPower;
 
+  // 장비를 갈아입었을 때의 스탯·전투력 미리보기 (실제 착용 상태는 그대로 둔다)
+  function previewStats(it) {
+    const slot = it.slot;
+    const prev = state.eq[slot];
+    if (prev === it) return computeStats();
+    state.eq[slot] = it;
+    const st = computeStats();
+    state.eq[slot] = prev;
+    return st;
+  }
+  G.previewStats = previewStats;
+
+  // 현재 같은 슬롯에 착용 중인 장비 대비 스탯 증감 + 전투력 차이
+  function compareItem(it) {
+    const cur = state.eq[it.slot] || null;
+    if (cur === it) return { cur: cur, equipped: true, power: 0, better: false, deltas: [] };
+    const now = computeStats();
+    const next = previewStats(it);
+    const r1 = (v) => Math.round(v * 10) / 10;
+    const deltas = [
+      { key: "atk", label: "공격", val: next.atk - now.atk, dec: 0 },
+      { key: "hp", label: "체력", val: next.maxHp - now.maxHp, dec: 0 },
+      { key: "def", label: "방어", val: r1(next.def - now.def), dec: 1 },
+      { key: "crit", label: "치명", val: r1(next.crit - now.crit), dec: 1, pct: true },
+      { key: "critDmg", label: "치피", val: r1(next.critDmg - now.critDmg), dec: 1, pct: true },
+    ];
+    return {
+      cur: cur,
+      equipped: false,
+      power: next.power - now.power,
+      better: next.power > now.power,
+      deltas: deltas,
+    };
+  }
+  G.compareItem = compareItem;
+
   function addItem(it) {
     if (state.inv.length >= 60) {
       // 가방이 가득 차면 가장 약한 장비를 자동 분해
