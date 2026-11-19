@@ -50,11 +50,23 @@
   }
 
   function titleFor(lv) {
-    if (lv >= 25) return "전설의 용사";
-    if (lv >= 18) return "심연의 정복자";
-    if (lv >= 12) return "정식 기사";
-    if (lv >= 6) return "견습 기사";
-    return "초보 모험가";
+    if (lv >= 30) return "빛의 공주";
+    if (lv >= 22) return "왕실 수호기사";
+    if (lv >= 15) return "로열 기사";
+    if (lv >= 8) return "견습 기사";
+    if (lv >= 3) return "어린 공주";
+    return "티아라 견습생";
+  }
+
+  function sfx(name) {
+    try {
+      G.Audio && G.Audio.sfx(name);
+    } catch (e) {}
+  }
+  function bgm(name) {
+    try {
+      G.Audio && G.Audio.bgm(name);
+    } catch (e) {}
   }
 
   /* ------------------------------------------------------------ modal core */
@@ -165,9 +177,21 @@
     g.clearRect(0, 0, cv.width, cv.height);
     const spr = G.sprite("hero", 5);
     if (spr) {
-      // 상반신만 크게
-      g.drawImage(spr, 18, 0, 64, 64, 0, 0, 96, 96);
+      // 공주 상반신 크롭 (티아라 ~ 어깨)
+      const sh = Math.round(spr.height * 0.63);
+      const sw = Math.round(spr.width * 0.84);
+      const sx = Math.round((spr.width - sw) / 2);
+      g.drawImage(spr, sx, 0, sw, sh, 0, 0, cv.width, cv.height);
     }
+  }
+
+  function renderSound() {
+    const b = $("#btnSound");
+    if (!b) return;
+    const on = S.sound !== false;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.setAttribute("title", on ? "사운드 끄기" : "사운드 켜기");
   }
 
   /* --------------------------------------------------------------- 사냥터 */
@@ -238,11 +262,12 @@
       fieldScene.hero.lunge = 1;
       fieldScene.slash(
         fieldScene.hero.x + 16,
-        fieldScene.groundY - 34,
+        fieldScene.groundY - 40,
         fieldScene.enemy.x - 14,
-        fieldScene.groundY - 26,
+        fieldScene.groundY - 30,
         crit ? "#ffe08a" : "#dff3ff"
       );
+      sfx(crit ? "crit" : "hit");
       const ex = fieldScene.enemy.x + rnd(-6, 6);
       const ey = fieldScene.groundY - 26 + rnd(-4, 4);
       fieldScene.damage(ex, ey, dmg, crit);
@@ -268,11 +293,14 @@
       fieldScene.damage(fieldScene.enemy.x - 34, fieldScene.groundY - 40, gold, false, "#ffd479");
       fieldScene.coins(Math.min(5, 2 + Math.floor(gold / 12)), fieldScene.enemy.x, fieldScene.groundY - 30);
       G.addExp(exp);
-      // 드랍
-      if (Math.random() < 0.075) {
-        const it = G.rollItem(S.stage, undefined);
+      sfx("coin");
+      // 드랍 — 사냥터는 골드·경험치·일반~고급 장비 위주
+      if (Math.random() < 0.085) {
+        const it = G.rollItem(S.stage, G.fieldDropRarity(S.stage));
         G.addItem(it);
-        fieldScene.text(fieldScene.enemy.x + 10, fieldScene.groundY - 88, "장비 획득!", G.RARITY[it.rarity].color, 13);
+        const rar = G.RARITY[it.rarity];
+        fieldScene.text(fieldScene.enemy.x + 10, fieldScene.groundY - 88, rar.name + " " + it.name, rar.color, 12.5);
+        sfx("drop");
         bagDot(true);
         if (S.inv.length <= 60) renderBag();
       } else if (Math.random() < 0.05 && S.pots < 9) {
@@ -365,6 +393,7 @@
     hitPlayer(m) {
       let dmg = Math.max(1, Math.round(m.atk * (0.9 + Math.random() * 0.2) - stats.def * 0.5));
       S.hp -= dmg;
+      sfx("hurt");
       fieldScene.hero.hurt = 1;
       fieldScene.hurtFlash = 1;
       fieldScene.damage(fieldScene.hero.x + 26 + rnd(-4, 4), fieldScene.groundY - 44, dmg, false, "#ff8a7a");
@@ -421,6 +450,11 @@
     burnDmg: 0,
     runPotions: 0,
     logLines: [],
+    auto: true,
+    autoTimer: null,
+    loot: [],
+    bossLoot: [],
+    lootTimer: null,
 
     floor() {
       return G.FLOORS[this.floorIdx];
@@ -444,6 +478,9 @@
       this.guarding = false;
       this.logLines = [];
       this.runPotions = 0;
+      this.loot = [];
+      this.bossLoot = [];
+      this.auto = S.autoBattle !== false;
       S.hp = stats.maxHp;
       $("#battle").classList.add("on");
       requestAnimationFrame(() => battleScene.resize());
@@ -451,6 +488,7 @@
       battleScene.enemy.scale = 4.1;
       this.spawnWave();
       this.log("sys", "던전 입장 · " + f.name);
+      bgm("dungeon");
       renderBattle();
       renderHud();
     },
@@ -491,8 +529,12 @@
       battleScene.enemy.boss = isBoss;
       battleScene.enemy.showBar = false;
       this.intent = this.makeIntent();
-      if (isBoss) this.log("sys", "보스 등장! " + name);
+      if (isBoss) {
+        this.log("sys", "보스 등장! " + name);
+        sfx("boss");
+      }
       renderBattle();
+      this.maybeAuto(760);
     },
 
     makeIntent() {
@@ -514,6 +556,7 @@
       if (kind === "dmg") p.className = "hl";
       else if (kind === "crit") p.className = "crit";
       else if (kind === "heal") p.className = "heal";
+      else if (kind === "loot") p.className = "loot";
       else if (kind === "sys") p.className = "sys";
       p.innerHTML = text;
       el.appendChild(p);
@@ -530,6 +573,7 @@
 
     act(kind) {
       if (!this.active || this.busy || !this.enemy || this.enemy.hp <= 0) return;
+      clearTimeout(this.autoTimer);
       const e = this.enemy;
       this.busy = true;
       this.guarding = false;
@@ -542,7 +586,8 @@
         dmg = r.dmg;
         crit = r.crit;
         battleScene.hero.lunge = 1;
-        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 40, battleScene.enemy.x - 18, battleScene.groundY - 30, crit ? "#ffe08a" : "#dff3ff");
+        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 46, battleScene.enemy.x - 18, battleScene.groundY - 34, crit ? "#ffe08a" : "#dff3ff");
+        sfx(crit ? "crit" : "hit");
       } else if (kind === "smash") {
         if (this.cds.smash > 0) return (this.busy = false);
         const r = this.playerDamage(2.1);
@@ -551,8 +596,9 @@
         this.cds.smash = 3;
         battleScene.hero.lunge = 1;
         battleScene.shake = 10;
-        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 46, battleScene.enemy.x - 14, battleScene.groundY - 24, "#ffd479");
+        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 52, battleScene.enemy.x - 14, battleScene.groundY - 30, "#ffd479");
         battleScene.burst(battleScene.enemy.x, battleScene.groundY - 30, "#ffd479", 12, 120);
+        sfx("smash");
       } else if (kind === "flame") {
         if (this.cds.flame > 0) return (this.busy = false);
         const r = this.playerDamage(1.5);
@@ -562,11 +608,13 @@
         this.burn = 3;
         this.burnDmg = Math.max(1, Math.round(stats.atk * 0.32));
         battleScene.hero.lunge = 1;
-        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 40, battleScene.enemy.x - 16, battleScene.groundY - 26, "#ff8a3d");
+        battleScene.slash(battleScene.hero.x + 18, battleScene.groundY - 46, battleScene.enemy.x - 16, battleScene.groundY - 32, "#ff8a3d");
         battleScene.burst(battleScene.enemy.x, battleScene.groundY - 30, "#ff7a32", 16, 130);
+        sfx("flame");
       } else if (kind === "guard") {
         this.guarding = true;
         battleScene.guardFx(true);
+        sfx("guard");
         this.log("sys", "방어 태세! 다음 공격 피해 70% 감소 + 반격");
         renderBattle();
         setTimeout(() => this.enemyTurn(), 320);
@@ -576,6 +624,7 @@
           this.log("sys", "포션이 없습니다");
           this.busy = false;
           renderBattle();
+          this.maybeAuto(400);
           return;
         }
         S.pots--;
@@ -584,6 +633,7 @@
         S.hp = Math.min(stats.maxHp, S.hp + heal);
         battleScene.burst(battleScene.hero.x, battleScene.groundY - 26, "#7bffa0", 14, 70);
         battleScene.text(battleScene.hero.x, battleScene.groundY - 62, "+" + Math.round(S.hp - before), "#7bffa0", 16);
+        sfx("potion");
         this.log("heal", "포션 사용 · 체력 <b>+" + Math.round(S.hp - before) + "</b>");
         renderHud();
         renderBattle();
@@ -647,8 +697,9 @@
       battleScene.hero.hurt = 1;
       battleScene.hurtFlash = 1;
       battleScene.shake = it.type === "heavy" ? 9 : 4;
-      battleScene.damage(battleScene.hero.x + rnd(-5, 5), battleScene.groundY - 48, dmg, false, "#ff8a7a");
+      battleScene.damage(battleScene.hero.x + rnd(-5, 5), battleScene.groundY - 54, dmg, false, "#ff8a7a");
       battleScene.enemy.lunge = 0;
+      sfx("hurt");
       this.log("dmg", (it.type === "heavy" ? "강타! " : "") + e.name + "의 공격 <b>" + fmt(dmg) + "</b> 피해" + (this.guarding ? " (방어)" : ""));
       if (this.guarding) {
         const c = Math.max(1, Math.round(stats.atk * 0.8));
@@ -656,6 +707,7 @@
         battleScene.enemy.flash = 1;
         battleScene.damage(battleScene.enemy.x, battleScene.groundY - 40, c, false, "#8fd8ff");
         battleScene.slash(battleScene.enemy.x, battleScene.groundY - 36, battleScene.enemy.x - 40, battleScene.groundY - 20, "#8fd8ff");
+        sfx("counter");
         this.log("dmg", "반격! <b>" + fmt(c) + "</b> 피해");
         if (e.hp <= 0) {
           renderBattle();
@@ -683,6 +735,7 @@
       if (this.cds.flame > 0) this.cds.flame--;
       this.intent = this.makeIntent();
       renderBattle();
+      this.maybeAuto(560);
     },
 
     enemyDown() {
@@ -705,6 +758,14 @@
         } else {
           this.log("sys", "적 처치! 다음 상대가 등장합니다");
         }
+        // 웨이브 클리어 = 장비 100% 드랍
+        const it = this.rollWaveLoot();
+        const rc = G.RARITY[it.rarity];
+        battleScene.text(battleScene.enemy.x, battleScene.groundY - 96, rc.name + " 장비!", rc.color, 13, 1.5);
+        battleScene.burst(battleScene.enemy.x, battleScene.groundY - 40, rc.color, 12, 90);
+        this.log("loot", "장비 획득 · <b style='color:" + rc.color + "'>[" + rc.name + "] " + it.name + "</b>");
+        sfx("drop");
+        bagDot(true);
         renderHud();
         setTimeout(() => this.spawnWave(), 620);
         return;
@@ -721,13 +782,19 @@
       S.stones += f.reward.stone;
       S.gold += f.reward.gold;
       S.stats.dungeons++;
-      const rarity = this.floorIdx >= 3 ? 2 : this.floorIdx === 2 ? 1 : 0;
-      const it = G.rollItem(this.floorIdx + 2, Math.min(3, rarity + (Math.random() < 0.25 ? 1 : 0)));
-      G.addItem(it);
+      // 보스 처치 = 다수·고등급 장비 보장
+      const items = this.rollBossLoot();
+      items.forEach((it) => G.addItem(it));
+      this.bossLoot = items;
       this.active = false;
+      this.busy = false;
       Field.paused = false;
+      clearTimeout(this.autoTimer);
       $("#battle").classList.remove("on");
       battleScene.enemy.alpha = 1;
+      battleScene.guardFx(false);
+      sfx("clear");
+      bgm("field");
       save();
       const rows = [
         '<div class="reward gold"><span class="ico"></span>' + fmt(f.reward.gold) + '<span class="rl">골드</span></div>',
@@ -735,36 +802,166 @@
         '<div class="reward gem"><span class="ico"></span>' + f.reward.gem + '<span class="rl">보석</span></div>',
         '<div class="reward stone"><span class="ico"></span>' + f.reward.stone + '<span class="rl">강화석</span></div>',
       ].join("");
-      const itemLine =
-        '<div class="item-head" style="margin-top:10px"><div style="flex:1">' +
-        '<div class="ih-n" style="color:' + G.RARITY[it.rarity].color + '">' + it.name + "</div>" +
-        '<div class="ih-r" style="color:' + G.RARITY[it.rarity].color + '">' + G.RARITY[it.rarity].name + " · " + it.slot + "</div></div></div>";
-      openModal({
+      const cards = items
+        .map((it) => {
+          const c = G.RARITY[it.rarity];
+          return (
+            '<div class="loot-card" style="--lc:' +
+            c.color +
+            ";--lg:" +
+            c.color +
+            '44">' +
+            '<span class="lc-ic" data-slot="' +
+            it.slot +
+            '"></span>' +
+            '<div class="lc-mid"><div class="lc-n">' +
+            it.name +
+            (it.lvl ? " +" + it.lvl : "") +
+            '</div><div class="lc-s">' +
+            itemStatsText(it) +
+            "</div></div><div class=\"lc-r\">" +
+            c.name +
+            "</div></div>"
+          );
+        })
+        .join("");
+      const m = openModal({
         icon: "🏆",
         title: this.floorIdx === 4 ? "심연 정복!" : f.floor + "층 클리어!",
         sub: (this.floorIdx < 4 ? "다음 층이 개방되었습니다" : "모든 층을 정복했습니다") + " · " + (first ? "첫 클리어 보상" : "재도전 보상"),
         bodyHTML:
-          '<div class="reward-grid">' + rows + "</div>" +
-          '<div style="font-size:10.5px;color:var(--dim);text-align:center;margin-bottom:6px">획득 장비</div>' +
-          '<div style="text-align:center;font-weight:800;color:' + G.RARITY[it.rarity].color + ';font-size:12.5px">' +
-          it.name + ' <span style="color:var(--gold);font-family:var(--mono)">[' + G.RARITY[it.rarity].name + "]</span></div>",
-        buttons: [
-          {
-            label: "계속 사냥하기",
-            cls: "gold",
-            onClick: () => {
-              renderAll();
-              switchTab("field");
+          '<div class="reward-grid">' +
+          rows +
+          "</div>" +
+          '<div class="m-label">획득 장비 <b>' +
+          items.length +
+          "개</b> <span>던전 전용 파밍</span></div>" +
+          '<div class="loot-list">' +
+          cards +
+          "</div>",
+        rows: [
+          [
+            {
+              label: "계속 사냥하기",
+              cls: "gold",
+              onClick: () => {
+                renderAll();
+                switchTab("field");
+              },
             },
-          },
+          ],
         ],
       });
+      if (m) {
+        m.querySelectorAll(".lc-ic").forEach((el, i) => {
+          if (items[i]) el.appendChild(makeCanvas(G.SLOTS[items[i].slot].icon, 2.4));
+        });
+      }
       renderAll();
       maybeDot();
     },
 
+    /* ---------------- 자동 전투 ---------------- */
+    toggleAuto(force) {
+      this.auto = force === undefined ? !this.auto : !!force;
+      S.autoBattle = this.auto;
+      save();
+      renderBattle();
+      if (this.auto) {
+        sfx("on");
+        toast("자동 전투 ON · 상황에 맞춰 스킬을 고릅니다", "gold");
+        this.maybeAuto(420);
+      } else {
+        sfx("off");
+        clearTimeout(this.autoTimer);
+        toast("자동 전투 OFF · 직접 조작하세요");
+      }
+    },
+
+    maybeAuto(delay) {
+      clearTimeout(this.autoTimer);
+      if (!this.auto || !this.active) return;
+      this.autoTimer = setTimeout(() => this.autoAct(), delay == null ? 600 : delay);
+    },
+
+    autoChoose() {
+      const e = this.enemy;
+      if (!e) return "attack";
+      const ratio = S.hp / stats.maxHp;
+      const it = this.intent || { type: "attack", mult: 1 };
+      const raw = it.type === "buff" ? 0 : e.atk * (it.mult || 1);
+      const incoming = Math.max(1, raw - stats.def * 0.6);
+      if (it.type !== "buff" && S.hp <= incoming * 1.2) {
+        if (S.pots > 0) return "potion";
+        return "guard";
+      }
+      if (ratio < 0.32 && S.pots > 0) return "potion";
+      if (it.type === "heavy" && ratio < 0.55) return "guard";
+      if (this.cds.smash === 0) return "smash";
+      if (this.cds.flame === 0 && this.burn === 0) return "flame";
+      return "attack";
+    },
+
+    autoAct() {
+      if (!this.active || this.busy) return;
+      if (!this.enemy || this.enemy.hp <= 0) return;
+      this.act(this.autoChoose());
+    },
+
+    /* ---------------- 장비 드랍 ---------------- */
+    rollWaveLoot() {
+      const f = this.floorIdx;
+      const ilvl = f + 2;
+      const x = Math.random() * 100;
+      let r;
+      if (f >= 3) r = x < 16 ? 3 : x < 60 ? 2 : 1;
+      else if (f >= 1) r = x < 7 ? 3 : x < 45 ? 2 : 1;
+      else r = x < 35 ? 2 : 1;
+      const it = G.rollItem(ilvl, r);
+      G.addItem(it);
+      this.pushLoot(it);
+      return it;
+    },
+
+    rollBossLoot() {
+      const f = this.floorIdx;
+      const ilvl = f + 3;
+      const plan = [
+        Math.random() * 100 < 12 + f * 6 ? 4 : 3,
+        Math.random() * 100 < 6 + f * 7 ? 4 : 2,
+        Math.random() * 100 < 45 + f * 6 ? 3 : 2,
+      ];
+      return plan.map((r) => G.rollItem(ilvl, Math.min(4, r)));
+    },
+
+    pushLoot(it) {
+      this.loot.push(it);
+      if (this.loot.length > 6) this.loot.shift();
+      this.showLootChip(it);
+    },
+
+    showLootChip(it) {
+      const el = $("#bLoot");
+      if (!el) return;
+      const c = G.RARITY[it.rarity];
+      el.innerHTML = "";
+      const chip = document.createElement("div");
+      chip.className = "loot-chip";
+      chip.style.setProperty("--lc", c.color);
+      chip.appendChild(makeCanvas(G.SLOTS[it.slot].icon, 1.6));
+      const sp = document.createElement("span");
+      sp.innerHTML = "<b>" + c.name + "</b> " + it.name;
+      chip.appendChild(sp);
+      el.appendChild(chip);
+      el.classList.add("on");
+      clearTimeout(this.lootTimer);
+      this.lootTimer = setTimeout(() => el.classList.remove("on"), 3200);
+    },
+
+
     die() {
       this.busy = true;
+      clearTimeout(this.autoTimer);
       this.log("sys", "쓰러졌습니다...");
       openModal({
         icon: "💀",
@@ -810,9 +1007,11 @@
       this.active = false;
       Field.paused = false;
       this.busy = false;
+      clearTimeout(this.autoTimer);
       $("#battle").classList.remove("on");
       battleScene.hero.alpha = 1;
       battleScene.guardFx(false);
+      bgm("field");
       toast("던전에서 나왔습니다");
       renderAll();
     },
@@ -822,6 +1021,11 @@
     const e = Dungeon.enemy;
     if (!e) return;
     const isBoss = Dungeon.wave >= Dungeon.floor().waves;
+    const ab = $("#btnAutoBattle");
+    if (ab) {
+      ab.classList.toggle("on", !!Dungeon.auto);
+      ab.textContent = "⚡ 자동 전투 " + (Dungeon.auto ? "ON" : "OFF");
+    }
     $("#bEnemyName").textContent = (isBoss ? "👑 " : "") + e.name;
     $("#bTurn").textContent = "TURN " + Dungeon.turn + " · " + (isBoss ? "BOSS" : "WAVE " + (Dungeon.wave + 1) + "/" + Dungeon.floor().waves);
     $("#bHpNum").textContent = Math.ceil(Math.max(0, S.hp)) + "/" + stats.maxHp;
@@ -856,6 +1060,8 @@
     battleScene.enemy.hp = e.hp;
     battleScene.enemy.maxHp = e.maxHp;
   }
+
+  Dungeon.render = renderBattle;
 
   function renderDungeon() {
     const wrap = $("#floorList");
@@ -1174,11 +1380,17 @@
     if (name === "field") {
       fieldScene.resize();
       renderField();
+      bgm("field");
     }
     if (name === "dungeon") {
       renderDungeon();
       battleScene.resize();
-      if (Dungeon.active) battleScene.draw();
+      if (Dungeon.active) {
+        battleScene.draw();
+        bgm("dungeon");
+      } else {
+        bgm("field");
+      }
     }
     if (name === "grow") renderGrow();
     if (name === "bag") {
@@ -1229,7 +1441,7 @@
     openModal({
       icon: "🌙",
       title: "오프라인 사냥 보상",
-      sub: G.fmtTime(capped) + " 동안 용사가 혼자 사냥했습니다 (" + kills + "마리)",
+      sub: G.fmtTime(capped) + " 동안 공주님이 혼자 사냥했습니다 (" + kills + "마리)",
       bodyHTML:
         '<div class="reward-grid"><div class="reward gold"><span class="ico"></span>' + fmt(gold) +
         '<span class="rl">골드</span></div><div class="reward exp"><span class="ico"></span>' + fmt(exp) + '<span class="rl">경험치</span></div></div>',
@@ -1362,6 +1574,19 @@
     $("#actFlame").onclick = () => Dungeon.act("flame");
     $("#actGuard").onclick = () => Dungeon.act("guard");
     $("#actPotion").onclick = () => Dungeon.act("potion");
+    $("#btnAutoBattle").onclick = () => Dungeon.toggleAuto();
+    $("#btnSound").onclick = () => {
+      const on = G.Audio ? G.Audio.toggle() : !S.sound;
+      S.sound = !!on;
+      renderSound();
+      save();
+    };
+
+    // UI 버튼 클릭음
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest && e.target.closest(".tab, .btn, .sq, .floor, .hud-sound, .b-exit, .b-auto");
+      if (t) sfx("click");
+    });
 
     document.addEventListener("keydown", (e) => {
       if (!Dungeon.active) return;
@@ -1418,6 +1643,7 @@
     fieldScene.ring(fieldScene.hero.x, fieldScene.groundY - 30, "#ffe9a8");
     fieldScene.text(fieldScene.hero.x, fieldScene.groundY - 70, "LEVEL UP!", "#ffe9a8", 18, 1.4);
     fieldScene.burst(fieldScene.hero.x, fieldScene.groundY - 30, "#ffe9a8", 16, 90);
+    sfx("levelup");
     toast("레벨 업! Lv." + S.lv + " · 체력 회복", "gold");
     renderHud();
     renderGrow();
@@ -1430,18 +1656,23 @@
     if (!S) S = G.defaultState();
     G.setState(S);
     S.pots = S.pots === undefined ? 3 : S.pots;
+    S.sound = S.sound !== false;
+    S.autoBattle = S.autoBattle !== false;
+    Dungeon.auto = S.autoBattle;
     stats = G.computeStats();
     S.hp = S.hp <= 0 ? stats.maxHp : Math.min(S.hp, stats.maxHp);
 
     fieldScene = new G.Scene($("#scene"), { groundRatio: 0.88, heroX: 0.27, enemyX: 0.73 });
-    fieldScene.hero.scale = 4;
+    fieldScene.hero.scale = 3.3;
     battleScene = new G.Scene($("#battleScene"), { groundRatio: 0.88, heroX: 0.26, enemyX: 0.72 });
-    battleScene.hero.scale = 4.6;
+    battleScene.hero.scale = 3.9;
     fieldScene.setTheme(Field.stage().theme, 1000 + S.stage * 37);
     Field.spawn();
     Field.atkTimer = 0.4;
 
     renderAvatar();
+    renderSound();
+    if (G.Audio) G.Audio.setEnabled(S.sound, true);
     renderAll();
     bind();
     switchTab("field");
@@ -1449,14 +1680,14 @@
     if (isNew) {
       setTimeout(() => {
         openModalRows({
-          icon: "⚔️",
+          icon: "👑",
           title: "던전 크루세이더",
-          sub: "사냥터는 자동으로 사냥하고,<br />던전은 직접 턴을 골라 공략하는 하이브리드 RPG입니다.",
+          sub: "빛의 공주 서쟈가 되어<br />사냥터와 심연의 탑을 정복하는 하이브리드 RPG입니다.",
           bodyHTML:
             '<div style="font-size:11px;line-height:1.7;color:#bdb4d8">' +
-            "· <b style='color:#f5c451'>사냥터</b> : 켜두면 알아서 사냥하며 골드·경험치·장비를 모읍니다.<br />" +
-            "· <b style='color:#f5c451'>던전</b> : 1~5층 보스를 수동 턴제로 공략합니다.<br />" +
-            "· <b style='color:#f5c451'>성장</b> : 골드로 스탯을, 강화석으로 장비를 강화합니다.</div>",
+            "· <b style='color:#f5c451'>사냥터</b> : 자동으로 사냥하며 골드·경험치·일반~고급 장비를 모읍니다.<br />" +
+            "· <b style='color:#f5c451'>던전</b> : 희귀·영웅 장비가 쏟아지는 파밍 던전. ⚡ 자동 전투로 한 번에 밀어도 됩니다.<br />" +
+            "· <b style='color:#f5c451'>사운드</b> : 우측 상단 🔊 버튼으로 BGM·효과음 ON/OFF.</div>",
           rows: [[{ label: "모험 시작!", cls: "gold", onClick: () => {} }]],
         });
       }, 350);

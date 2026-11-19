@@ -30,6 +30,7 @@
   --r-1: #5ddc7c; /* 고급 */
   --r-2: #55a8ff; /* 희귀 */
   --r-3: #ffb02e; /* 영웅 */
+  --r-4: #ff5ce0; /* 전설 */
 
   --font: "Noto Sans CJK KR", "Noto Sans KR", "Apple SD Gothic Neo",
     "Malgun Gothic", system-ui, sans-serif;
@@ -246,6 +247,43 @@ body {
   gap: 4px;
   align-items: flex-end;
   flex: 0 0 auto;
+}
+
+.hud-sound {
+  flex: 0 0 auto;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1.5px solid #3a3360;
+  background: linear-gradient(180deg, #221d3c, #171328);
+  color: #6c6688;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s, box-shadow 0.2s, color 0.2s, border-color 0.2s;
+}
+.hud-sound svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+.hud-sound .ico-off {
+  display: none;
+}
+.hud-sound:not(.on) .ico-on {
+  display: none;
+}
+.hud-sound:not(.on) .ico-off {
+  display: block;
+}
+.hud-sound.on {
+  color: #b9a4ff;
+  border-color: #6a55b8;
+  box-shadow: 0 0 9px rgba(139, 108, 242, 0.4);
+}
+.hud-sound:active {
+  transform: scale(0.92);
 }
 .cur {
   display: flex;
@@ -957,8 +995,140 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 6px;
   pointer-events: none;
 }
+.b-top-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  pointer-events: auto;
+}
+.b-auto {
+  pointer-events: auto;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1.5px solid #3b3560;
+  background: rgba(8, 6, 16, 0.78);
+  color: var(--dim);
+  letter-spacing: -0.2px;
+  transition: all 0.16s;
+}
+.b-auto.on {
+  color: #0d1b16;
+  background: linear-gradient(180deg, #7bffd0, #2fbd93);
+  border-color: #8fffe0;
+  box-shadow: 0 0 12px rgba(95, 215, 201, 0.55);
+}
+.b-auto:active {
+  transform: scale(0.96);
+}
+
+.loot-strip {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 5px;
+  padding: 0 10px;
+  max-height: 0;
+  overflow: hidden;
+  background: #0b0916;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+}
+.loot-strip.on {
+  max-height: 40px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.loot-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 3px;
+  border-radius: 6px;
+  border: 1px solid var(--lc, #4a436c);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--lc, #fff);
+  white-space: nowrap;
+  animation: lootIn 0.25s ease-out;
+}
+.loot-chip canvas {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+.loot-chip b {
+  font-family: var(--mono);
+  font-weight: 800;
+}
+@keyframes lootIn {
+  from {
+    transform: translateY(6px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* 던전 클리어 보상 — 장비 카드 */
+.loot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.loot-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  border: 1.5px solid var(--lc, #3a3358);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.18));
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.04), 0 0 12px var(--lg, transparent);
+}
+.loot-card canvas {
+  width: 30px;
+  height: 30px;
+  image-rendering: pixelated;
+}
+.loot-card .lc-mid {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.loot-card .lc-n {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--lc, #fff);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loot-card .lc-s {
+  font-size: 9px;
+  color: var(--dim);
+  font-family: var(--mono);
+  margin-top: 1px;
+}
+.loot-card .lc-r {
+  flex: 0 0 auto;
+  font-size: 8.5px;
+  font-weight: 900;
+  color: var(--lc, #fff);
+  border: 1px solid var(--lc, #555);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
 .b-exit {
   pointer-events: auto;
   font-size: 10px;
@@ -1057,6 +1227,9 @@ main {
 .b-log p {
   margin: 0 0 2px;
   animation: logIn 0.2s ease-out;
+}
+.b-log p.loot {
+  color: #ffd98a;
 }
 @keyframes logIn {
   from {
@@ -1432,6 +1605,15 @@ main {
   box-shadow: inset 0 0 26px rgba(255, 176, 46, 0.16);
   border-color: #5c4520;
 }
+.item-row.r4 {
+  --rc: var(--r-4);
+  box-shadow: inset 0 0 30px rgba(255, 92, 224, 0.2);
+  border-color: #7a2f6b;
+}
+.item-row.r4 .ir-name {
+  color: #ffa8ef;
+  text-shadow: 0 0 8px rgba(255, 92, 224, 0.6);
+}
 .item-row .ir-ico {
   flex: 0 0 auto;
   width: 32px;
@@ -1564,6 +1746,25 @@ main {
   color: var(--dim);
   margin-bottom: 12px;
   line-height: 1.5;
+}
+.modal .m-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--dim);
+  margin: 2px 0 6px;
+}
+.modal .m-label b {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.modal .m-label span {
+  margin-left: auto;
+  font-size: 8.5px;
+  color: var(--dim-2);
 }
 .modal .m-icon {
   font-size: 34px;

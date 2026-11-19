@@ -23,8 +23,8 @@
           </div>
           <div class="hud-mid">
             <div class="hud-name">
-              <span>용사 서쟈</span>
-              <span class="title" id="hudTitle">초보 모험가</span>
+              <span>공주 서쟈</span>
+              <span class="title" id="hudTitle">어린 공주</span>
             </div>
             <div class="bar hp" id="hudHpBar">
               <i id="hudHpFill"></i><span id="hudHpText">60 / 60</span>
@@ -38,6 +38,10 @@
             <div class="cur gem"><span class="ico"></span><b id="hudGem">0</b></div>
             <div class="cur dc"><span class="ico"></span><b id="hudDc">0</b></div>
           </div>
+          <button class="hud-sound on" id="btnSound" aria-label="사운드 켜기/끄기" aria-pressed="true" title="사운드 켜기/끄기">
+            <svg class="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5z" /><path d="M15.5 8.5a4.8 4.8 0 0 1 0 7" /><path d="M18.5 6a8.5 8.5 0 0 1 0 12" /></svg>
+            <svg class="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5z" /><path d="M16 9.5l4.5 5" /><path d="M20.5 9.5 16 14.5" /></svg>
+          </button>
         </header>
 
         <!-- ================= 본문 ================= -->
@@ -90,7 +94,7 @@
           <section class="view" id="view-dungeon">
             <div class="dg-hero">
               <h2>심연의 탑</h2>
-              <p>자동 사냥은 여기서 멈춥니다.<br />턴을 골라 5개 층의 보스를 직접 공략하세요.</p>
+              <p>자동 전투로 층을 밀어도 되고,<br />턴을 직접 골라 보스를 공략해도 됩니다.<br /><b style="color: #ffce54">던전은 희귀·영웅 장비 파밍의 중심지!</b></p>
               <div class="coins">
                 <span class="cur dc"><span class="ico"></span><b id="hudDc2">0</b></span>
               </div>
@@ -100,9 +104,9 @@
               <div class="card" id="dgTip">
                 <div class="card-h"><h3>공략 팁</h3></div>
                 <div style="font-size: 10.5px; color: var(--dim); line-height: 1.65">
+                  · <b style="color: #7bffd0">⚡ 자동 전투</b>를 켜면 웨이브부터 보스전까지 알아서 싸웁니다.<br />
                   · 적의 <b style="color: #ff9a8a">다음 행동</b>을 보고 방어를 고르면 피해를 크게 줄일 수 있어요.<br />
-                  · <b style="color: #ffce54">방어</b> 성공 시 반격으로 추가 피해를 줍니다.<br />
-                  · 보스는 체력이 50% 아래로 떨어지면 <b style="color: #ff8f8b">광폭화</b>합니다.
+                  · 웨이브·보스 처치 시 <b style="color: #ffce54">장비가 100% 드랍</b>됩니다(보스는 다수).
                 </div>
               </div>
             </div>
@@ -112,7 +116,10 @@
               <div class="b-arena">
                 <canvas id="battleScene"></canvas>
                 <div class="b-top">
-                  <button class="b-exit" id="btnFlee">← 도망</button>
+                  <div class="b-top-left">
+                    <button class="b-exit" id="btnFlee">← 도망</button>
+                    <button class="b-auto on" id="btnAutoBattle">⚡ 자동 전투 ON</button>
+                  </div>
                   <div class="intent" id="intent"></div>
                 </div>
               </div>
@@ -132,6 +139,7 @@
                   </div>
                 </div>
               </div>
+              <div class="loot-strip" id="bLoot"></div>
               <div class="b-log" id="bLog"></div>
               <div class="b-actions">
                 <button class="act attack" id="actAttack">
@@ -291,6 +299,7 @@
 
     <script src="game.js"></script>
     <script src="render.js"></script>
+    <script src="audio.js"></script>
     <script src="ui.js"></script>
   </body>
 </html>

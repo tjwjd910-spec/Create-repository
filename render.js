@@ -855,6 +855,16 @@
       g.globalAlpha = 1;
     }
 
+    // 십자 반짝임
+    sparkle(g, x, y, r, a) {
+      g.globalAlpha = 0.25 + a * 0.75;
+      g.fillStyle = "#fff6c8";
+      const w = Math.max(1, Math.round(r));
+      g.fillRect(Math.round(x) - w, Math.round(y), w * 2 + 1, 1);
+      g.fillRect(Math.round(x), Math.round(y) - w, 1, w * 2 + 1);
+      g.globalAlpha = 1;
+    }
+
     drawHero(g) {
       const h = this.hero;
       if (h.alpha <= 0) return;
@@ -864,6 +874,16 @@
       const x = Math.round(h.x + lunge + (h.hurt > 0 ? -Math.sin(h.hurt * 22) * 3 : 0));
       const y = Math.round(h.y + h.bob);
       this.drawShadow(g, x, y, spr.width * 0.68);
+
+      // 빛의 공주 오라
+      const cy = y - spr.height * 0.52;
+      const aura = g.createRadialGradient(x, cy, 3, x, cy, spr.width * 0.95);
+      aura.addColorStop(0, "rgba(255,226,120,0.20)");
+      aura.addColorStop(0.55, "rgba(255,214,90,0.07)");
+      aura.addColorStop(1, "rgba(255,214,90,0)");
+      g.fillStyle = aura;
+      g.fillRect(x - spr.width, cy - spr.height, spr.width * 2, spr.height * 2);
+
       g.save();
       g.globalAlpha = h.alpha;
       if (h.dead > 0) {
@@ -879,6 +899,19 @@
         g.globalCompositeOperation = "source-over";
       }
       g.restore();
+
+      // 티아라 반짝임
+      if (h.alpha > 0.9) {
+        const top = y - spr.height + 4;
+        const tw = (Math.sin(this.t * 2.6) + 1) / 2;
+        const tw2 = (Math.cos(this.t * 3.4) + 1) / 2;
+        g.save();
+        g.globalCompositeOperation = "lighter";
+        this.sparkle(g, x - spr.width * 0.26, top + 6, 2 + tw * 1.6, tw);
+        this.sparkle(g, x + spr.width * 0.28, top + 2, 1.6 + tw2 * 1.4, tw2);
+        g.restore();
+      }
+
       if (this.guard > 0) {
         g.save();
         g.globalAlpha = 0.55;

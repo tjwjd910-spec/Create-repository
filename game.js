@@ -6,7 +6,7 @@
   "use strict";
 
   const G = (window.G = window.G || {});
-  G.VER = 1;
+  G.VER = 2;
   G.SAVE_KEY = "dungeonCrusader.save.v1";
 
   /* ---------------------------------------------------------------- utils */
@@ -113,6 +113,7 @@
     { name: "고급", color: "#5ddc7c", mul: 1.38 },
     { name: "희귀", color: "#55a8ff", mul: 1.95 },
     { name: "영웅", color: "#ffb02e", mul: 2.9 },
+    { name: "전설", color: "#ff5ce0", mul: 4.1 },
   ];
 
   G.SLOTS = {
@@ -135,6 +136,8 @@
     y: "#ffe9a8",
     g: "#f5c451",
     G: "#b8862a",
+    h: "#ffe066", // 공주 금발
+    H: "#ddab31", // 금발 그림자
     o: "#ff8a3d",
     r: "#e0413f",
     R: "#8f1f22",
@@ -159,28 +162,35 @@
   };
 
   const SPR = {
-    /* ---------------- 용사 (20x20) ---------------- */
+    /* -------- 빛의 공주 (금발 장발 · 티아라 · 로열 드레스 · 빛나는 검, 22x27) -------- */
     hero: [
-      ".....krrrrk.......",
-      ".....krrrRRk......",
-      "....kmmmmmmk..kk..",
-      "....kMMMMMMk.kmMk.",
-      "....kMykkyMk.kmMk.",
-      "....kkkkkkkk.kmMk.",
-      "....kddddddk.kmMk.",
-      ".....kBBBBk..kmMk.",
-      "...kkcccccckkkmMk.",
-      "..kmmmcCCcmmmkmMk.",
-      "..kMMMcCCcMMMkmMk.",
-      "..kMMccCCccMMkmMk.",
-      "..kMMggGGggMMkmMkk",
-      "..kBBccCCccBBggggG",
-      "..kRRCCCCCCkkkbbkk",
-      "..kRRCCCCCCk.kbbk.",
-      "..kRRCCCCCCk.kbbk.",
-      "...kkCCCCCCk.kGGk.",
-      "...kBBBBBBBBk.kk..",
-      "....kkkkkkkk......",
+      "",
+      "..........kk",
+      "........kkyyk.k",
+      ".......kgkttkkgk...k",
+      "......kytyggyytk..kyk",
+      "....kkkggggggggkkkkwk",
+      "...khhhGGGGGGGGhhhkmk",
+      "...khhhhhhhhhhhhhhkwk",
+      "...khhhhhhhhhhhhhhkmk",
+      "...khhhhsssssshhhhkwk",
+      "...khhHshsssshsHhhkmk",
+      "...kyhsswesswesshykwk",
+      "...khHsseesseessHhkmk",
+      "...khHsSssssssSsHhkwk",
+      "...khHssssrrssssHhkmk",
+      "...kyHkSSSSSSSSkHykwk",
+      "...khHkkksssskkkssyggk",
+      "...kPpCCCCCCCCCCsSbkk",
+      "...kPpccccggccccpPbk",
+      "...kPpcycgppgcycpPgk",
+      "...kPpccccPPccccpPk",
+      "...kPpggggyyggggpPk",
+      "...kPpCcppccppcCpPk",
+      "....kcCcppccppcCck",
+      "....kcccccccccccck",
+      "....kggggggggggggk",
+      ".....kkkkBBkBBkkk",
     ],
     /* ---------------- 슬라임 (16x16) ---------------- */
     slime: [
@@ -508,13 +518,14 @@
   function newItem(slot, rarity, ilvl, baseName) {
     const r = G.RARITY[rarity];
     const lvlF = 1 + (ilvl - 1) * 0.135;
+    const nameIdx = Math.min(5, rarity + (ilvl >= 6 ? 1 : 0));
     const it = {
       uid: "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       slot,
       rarity,
       lvl: 0,
       ilvl,
-      name: baseName || pick(G.BASES[slot]),
+      name: baseName || G.BASES[slot][nameIdx] || pick(G.BASES[slot]),
       atk: 0,
       hp: 0,
       def: 0,
@@ -555,6 +566,8 @@
       kills: 0,
       stageKills: 0,
       auto: true,
+      autoBattle: true,
+      sound: true,
       inv: [],
       eq: { weapon: null, armor: null, acc: null },
       floors: [false, false, false, false, false],
@@ -697,15 +710,24 @@
   function rollItem(ilvl, forceRarity) {
     let r = 0;
     const x = Math.random() * 100;
-    if (x < 3) r = 3;
-    else if (x < 14) r = 2;
-    else if (x < 38) r = 1;
+    if (x < 1) r = 4;
+    else if (x < 9) r = 3;
+    else if (x < 30) r = 2;
+    else if (x < 62) r = 1;
     else r = 0;
     if (forceRarity !== undefined) r = forceRarity;
     const slot = pick(["weapon", "armor", "acc"]);
     return newItem(slot, r, ilvl);
   }
   G.rollItem = rollItem;
+
+  // 사냥터 드랍은 일반~고급 위주 (던전이 장비 파밍의 중심)
+  G.fieldDropRarity = function (stage) {
+    const x = Math.random() * 100;
+    if (stage >= 6 && x < 8) return 2;
+    if (x < 26) return 1;
+    return 0;
+  };
 
   function salvageOne(it, silent) {
     const stones = 1 + it.rarity + Math.floor((it.lvl || 0) / 2);
