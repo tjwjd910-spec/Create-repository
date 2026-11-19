@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#100e19" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>던전 크루세이더 — 방치형·던전 RPG</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="phone">
+        <!-- ================= 상단 HUD ================= -->
+        <header class="hud">
+          <div class="avatar">
+            <canvas id="avatarCv" width="96" height="96"></canvas>
+            <span class="lvtag" id="hudLv">1</span>
+          </div>
+          <div class="hud-mid">
+            <div class="hud-name">
+              <span>용사 서쟈</span>
+              <span class="title" id="hudTitle">초보 모험가</span>
+            </div>
+            <div class="bar hp" id="hudHpBar">
+              <i id="hudHpFill"></i><span id="hudHpText">60 / 60</span>
+            </div>
+            <div class="bar exp">
+              <i id="hudExpFill"></i>
+            </div>
+          </div>
+          <div class="hud-cur">
+            <div class="cur gold"><span class="ico"></span><b id="hudGold">0</b></div>
+            <div class="cur gem"><span class="ico"></span><b id="hudGem">0</b></div>
+            <div class="cur dc"><span class="ico"></span><b id="hudDc">0</b></div>
+          </div>
+        </header>
+
+        <!-- ================= 본문 ================= -->
+        <main id="views">
+          <!-- ---------- 사냥터 ---------- -->
+          <section class="view active" id="view-field">
+            <div class="stage-bar">
+              <button class="sq" id="stagePrev" aria-label="이전 스테이지">◀</button>
+              <div class="stage-info">
+                <div class="stage-name" id="stageName"><em>STAGE 01</em>초원 평원</div>
+                <div class="stage-sub" id="stageSub">슬라임 · 처치 0 / 8</div>
+              </div>
+              <button class="sq" id="stageNext" aria-label="다음 스테이지">▶</button>
+            </div>
+
+            <div class="scene-wrap">
+              <canvas id="scene"></canvas>
+              <div class="scene-hud">
+                <div class="badge" id="badgeStage">STAGE <b>1</b></div>
+                <div class="badge" id="badgeDps">DPS <b>0</b></div>
+              </div>
+              <div class="stage-clear" id="stageClear"><span>STAGE CLEAR!</span></div>
+              <div class="fade-btm"></div>
+            </div>
+
+            <div class="field-panel">
+              <div class="chips">
+                <div class="chip">
+                  <span class="lb">공격력</span><span class="vl" id="chipAtk">7</span>
+                </div>
+                <div class="chip">
+                  <span class="lb">치명타</span><span class="vl" id="chipCrit">5%</span>
+                </div>
+                <div class="chip">
+                  <span class="lb">속도</span><span class="vl" id="chipAspd">1.0</span>
+                </div>
+              </div>
+              <div class="killbar">
+                <span id="killText">처치 0/8</span>
+                <div class="track"><i id="killFill"></i></div>
+                <button class="sq auto on" id="btnAuto">자동<br />진행</button>
+              </div>
+              <button class="btn-ad" id="btnDouble">
+                <span class="ad-ico">AD</span> 광고 보고 즉시 보상 2배
+              </button>
+            </div>
+          </section>
+
+          <!-- ---------- 던전 ---------- -->
+          <section class="view" id="view-dungeon">
+            <div class="dg-hero">
+              <h2>심연의 탑</h2>
+              <p>자동 사냥은 여기서 멈춥니다.<br />턴을 골라 5개 층의 보스를 직접 공략하세요.</p>
+              <div class="coins">
+                <span class="cur dc"><span class="ico"></span><b id="hudDc2">0</b></span>
+              </div>
+            </div>
+            <div class="pad">
+              <div class="floor-list" id="floorList"></div>
+              <div class="card" id="dgTip">
+                <div class="card-h"><h3>공략 팁</h3></div>
+                <div style="font-size: 10.5px; color: var(--dim); line-height: 1.65">
+                  · 적의 <b style="color: #ff9a8a">다음 행동</b>을 보고 방어를 고르면 피해를 크게 줄일 수 있어요.<br />
+                  · <b style="color: #ffce54">방어</b> 성공 시 반격으로 추가 피해를 줍니다.<br />
+                  · 보스는 체력이 50% 아래로 떨어지면 <b style="color: #ff8f8b">광폭화</b>합니다.
+                </div>
+              </div>
+            </div>
+
+            <!-- 전투 화면 -->
+            <div class="battle" id="battle">
+              <div class="b-arena">
+                <canvas id="battleScene"></canvas>
+                <div class="b-top">
+                  <button class="b-exit" id="btnFlee">← 도망</button>
+                  <div class="intent" id="intent"></div>
+                </div>
+              </div>
+              <div class="b-info">
+                <div class="b-name">
+                  <span id="bEnemyName">슬라임</span>
+                  <span class="turn" id="bTurn">TURN 1</span>
+                </div>
+                <div class="b-bars">
+                  <div>
+                    <div class="b-bar-lab"><span>내 체력</span><b id="bHpNum">60/60</b></div>
+                    <div class="bar hp thin" id="bHpBar"><i id="bHpFill"></i></div>
+                  </div>
+                  <div>
+                    <div class="b-bar-lab"><span>적 체력</span><b id="bEhpNum">90/90</b></div>
+                    <div class="bar enemy thin" id="bEhpBar"><i id="bEhFill"></i></div>
+                  </div>
+                </div>
+              </div>
+              <div class="b-log" id="bLog"></div>
+              <div class="b-actions">
+                <button class="act attack" id="actAttack">
+                  <span class="em">⚔️</span>
+                  <span class="at"><b>기본 공격</b><small>공격력 100%</small></span>
+                  <span class="cd" id="cdAttack"></span>
+                </button>
+                <button class="act skill1" id="actSmash">
+                  <span class="em">💥</span>
+                  <span class="at"><b>강타</b><small>공격력 210%</small></span>
+                  <span class="cd" id="cdSmash"></span>
+                </button>
+                <button class="act skill2" id="actFlame">
+                  <span class="em">🔥</span>
+                  <span class="at"><b>화염베기</b><small>150% + 화상</small></span>
+                  <span class="cd" id="cdFlame"></span>
+                </button>
+                <button class="act guard" id="actGuard">
+                  <span class="em">🛡️</span>
+                  <span class="at"><b>방어 / 반격</b><small>피해 70% 감소</small></span>
+                  <span class="cd" id="cdGuard"></span>
+                </button>
+                <button class="act wide" id="actPotion">
+                  <span class="em">🧪</span>
+                  <span class="at"><b>포션 사용</b><small>체력 45% 회복 · 남은 포션 <span id="potCount">3</span>개</small></span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- 성장 ---------- -->
+          <section class="view" id="view-grow">
+            <div class="growth-head">
+              <div>
+                <div class="gbig" id="growLv">1</div>
+                <div class="glb">LEVEL</div>
+              </div>
+              <div style="flex: 1">
+                <div class="gsub" id="growExp">경험치 0 / 20</div>
+                <div class="bar exp" style="margin-top: 4px; height: 9px">
+                  <i id="growExpFill"></i>
+                </div>
+                <div class="gsub" style="margin-top: 5px">
+                  보유 골드 <b style="color: var(--gold); font-family: var(--mono)" id="growGold">0</b>
+                </div>
+              </div>
+            </div>
+            <div class="pad">
+              <div class="card">
+                <div class="card-h">
+                  <h3>전투 능력치</h3>
+                  <span class="sub" id="powerLabel">전투력 0</span>
+                </div>
+                <div class="stat-summary" id="statSummary"></div>
+              </div>
+              <div class="card">
+                <div class="card-h">
+                  <h3>골드로 강화</h3>
+                  <span class="sub">골드는 사냥터에서 자동으로 모입니다</span>
+                </div>
+                <div id="upList"></div>
+              </div>
+              <div class="card">
+                <div class="card-h"><h3>장비 강화</h3><span class="sub" id="stoneLabel">강화석 0</span></div>
+                <div id="enhList" style="display: flex; flex-direction: column; gap: 6px"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- 가방 ---------- -->
+          <section class="view" id="view-bag">
+            <div class="pad">
+              <div class="card">
+                <div class="card-h">
+                  <h3>착용 장비</h3>
+                  <span class="sub" id="bagPower">전투력 0</span>
+                </div>
+                <div class="eq-grid" id="eqGrid"></div>
+              </div>
+              <div class="card">
+                <div class="card-h">
+                  <h3>가방</h3>
+                  <div class="inv-tools">
+                    <button class="btn sm ghost" id="btnSort">정렬</button>
+                    <button class="btn sm red" id="btnSalvage">일괄 분해</button>
+                  </div>
+                </div>
+                <div style="font-size: 9.5px; color: var(--dim-2); margin-bottom: 7px" id="bagMeta">
+                  장비 0 / 60
+                </div>
+                <div id="invList"></div>
+              </div>
+              <div class="card">
+                <div class="card-h"><h3>광고 자리 (프로토타입)</h3></div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <button class="btn-ad" id="btnChest">
+                    <span class="ad-ico">AD</span> 황금 상자 열기 (강화석 3개)
+                  </button>
+                  <button class="btn-ad" id="btnFreeGem">
+                    <span class="ad-ico">AD</span> 보석 10개 받기
+                  </button>
+                  <div style="font-size: 9px; color: var(--dim-2); line-height: 1.5; margin-top: 2px">
+                    실제 출시 시 AdMob / H5 광고로 교체되는 자리입니다.
+                    <code style="font-family: var(--mono); color: #9b8bff">Ads.show('reward_chest')</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <!-- ================= 탭 ================= -->
+        <nav class="tabbar" id="tabbar">
+          <button class="tab on" data-tab="field">
+            <span class="ti">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20 14 10" /><path d="M14 10l3-6 3 3-6 3z" /><path d="M4 20l3-1 1-3" />
+              </svg>
+            </span>
+            사냥터
+            <span class="dot" id="dotField"></span>
+          </button>
+          <button class="tab" data-tab="dungeon">
+            <span class="ti">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 21V9l7-6 7 6v12" /><path d="M10 21v-6h4v6" /><path d="M9 9h.01M15 9h.01" />
+              </svg>
+            </span>
+            던전
+            <span class="dot show" id="dotDungeon"></span>
+          </button>
+          <button class="tab" data-tab="grow">
+            <span class="ti">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19V5" /><path d="M4 19h16" />
+                <path d="M8 16v-4M12.5 16V8M17 16v-6" />
+              </svg>
+            </span>
+            성장
+            <span class="dot" id="dotGrow"></span>
+          </button>
+          <button class="tab" data-tab="bag">
+            <span class="ti">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8h12l1 12H5L6 8z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" />
+              </svg>
+            </span>
+            가방
+            <span class="dot" id="dotBag"></span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <div id="toasts"></div>
+    <div id="modal-root"></div>
+
+    <script src="game.js"></script>
+    <script src="render.js"></script>
+    <script src="ui.js"></script>
+  </body>
+</html>
