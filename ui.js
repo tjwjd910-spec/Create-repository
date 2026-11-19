@@ -65,6 +65,8 @@
   }
   function bgm(name) {
     try {
+      // 타이틀·컷신 화면에서는 BGM을 켜지 않는다 (오프닝 테마가 우선)
+      if (G.titleActive) return;
       G.Audio && G.Audio.bgm(name);
     } catch (e) {}
   }
@@ -323,10 +325,42 @@
     if (e.target.id === "modal-root") closeModal();
   });
 
+  /* ------------------------------------------------------------ 공주 닉네임 */
+  const DEFAULT_NAME = "서쟈";
+  function playerName() {
+    const st = G.getState && G.getState();
+    const n = st ? st.playerName || st.name : null;
+    return typeof n === "string" && n.trim() ? n.trim().slice(0, 10) : DEFAULT_NAME;
+  }
+  G.playerName = playerName;
+  G.DEFAULT_NAME = DEFAULT_NAME;
+  G.setPlayerName = function (raw) {
+    const nm = String(raw == null ? "" : raw).replace(/\s+/g, " ").trim().slice(0, 10) || DEFAULT_NAME;
+    const st = G.getState();
+    if (!st) return nm;
+    st.playerName = nm;
+    st.name = nm;
+    if (S) {
+      renderHud();
+      save();
+    }
+    return nm;
+  };
+
+  /* --------------------------------------------------------------- 타이틀 */
+  // 오프닝(타이틀·컷신·닉네임) 동안에는 게임 루프를 멈춘다 — intro.js 가 해제
+  G.titleActive = true;
+
   /* ------------------------------------------------------------------ HUD */
   function renderHud() {
     const hpPct = clamp((S.hp / stats.maxHp) * 100, 0, 100);
     $("#hudLv").textContent = S.lv;
+    const hudName = $("#hudName");
+    if (hudName) {
+      const nm = playerName();
+      hudName.textContent = nm;
+      hudName.classList.toggle("long", nm.length > 6);
+    }
     $("#hudTitle").textContent = titleFor(S.lv);
     $("#hudHpFill").style.width = hpPct.toFixed(1) + "%";
     $("#hudHpText").textContent = Math.ceil(Math.max(0, S.hp)) + " / " + stats.maxHp;
@@ -2037,7 +2071,7 @@
     openModal({
       icon: "🌙",
       title: "오프라인 사냥 보상",
-      sub: G.fmtTime(capped) + " 동안 공주님이 혼자 사냥했습니다 (" + kills + "마리)",
+      sub: G.fmtTime(capped) + " 동안 " + playerName() + " 공주님이 혼자 사냥했습니다 (" + kills + "마리)",
       bodyHTML:
         '<div class="reward-grid"><div class="reward gold"><span class="ico"></span>' + fmt(gold) +
         '<span class="rl">골드</span></div><div class="reward exp"><span class="ico"></span>' + fmt(exp) + '<span class="rl">경험치</span></div></div>',
@@ -2243,6 +2277,12 @@
     const dt = Math.min(0.06, (now - lastT) / 1000);
     lastT = now;
 
+    // 타이틀·컷신·닉네임 화면에서는 게임을 잠시 멈춘다 (시간·사냥·저장 모두 정지)
+    if (G.titleActive) {
+      requestAnimationFrame(loop);
+      return;
+    }
+
     S.playtime += dt;
     Combo.update(dt);
     Field.update(dt);
@@ -2285,12 +2325,14 @@
     const isNew = !S;
     if (!S) S = G.defaultState();
     G.setState(S);
+    G.hadSave = !isNew;
     S.pots = S.pots === undefined ? 3 : S.pots;
     S.sound = S.sound !== false;
     S.autoBattle = S.autoBattle !== false;
     Dungeon.auto = S.autoBattle;
     if (!S.quest) S.quest = { idx: 0, prog: 0, done: false };
     S.ult = clamp(S.ult || 0, 0, 100);
+    S.playerName = playerName();
     stats = G.computeStats();
     S.hp = S.hp <= 0 ? stats.maxHp : Math.min(S.hp, stats.maxHp);
 
@@ -2309,30 +2351,62 @@
     bind();
     switchTab("field");
 
-    if (isNew) {
-      setTimeout(() => {
-        openModalRows({
-          icon: "👑",
-          title: "던전 크루세이더",
-          sub: "빛의 공주 서쟈가 되어<br />사냥터와 심연의 탑을 정복하는 하이브리드 RPG입니다.",
-          bodyHTML:
-            '<div style="font-size:11px;line-height:1.7;color:#bdb4d8">' +
-            "· <b style='color:#f5c451'>사냥터</b> : 자동으로 사냥하며 골드·경험치·일반~고급 장비를 모읍니다.<br />" +
-            "· <b style='color:#f5c451'>던전</b> : 희귀·영웅 장비가 쏟아지는 파밍 던전. ⚡ 자동 전투로 한 번에 밀어도 됩니다.<br />" +
-            "· <b style='color:#f5c451'>사운드</b> : 우측 상단 🔊 버튼으로 BGM·효과음 ON/OFF.</div>",
-          rows: [[{ label: "모험 시작!", cls: "gold", onClick: () => {} }]],
-        });
-      }, 350);
-    } else {
-      const away = (Date.now() - (S.lastSeen || Date.now())) / 1000;
-      save();
-      setTimeout(() => checkOffline(away), 450);
-    }
+    // 이어하기일 때 타이틀을 닫은 뒤 오프라인 보상을 보여준다 (저장으로 lastSeen 이 덮이기 전에 먼저 계산)
+    G.pendingOffline = isNew ? 0 : (Date.now() - (S.lastSeen || Date.now())) / 1000;
 
     requestAnimationFrame(loop);
-    // 자동 저장
-    setInterval(() => save(), 15000);
+    // 자동 저장 (타이틀·컷신 화면에서는 저장하지 않는다)
+    setInterval(() => {
+      if (!G.titleActive) save();
+    }, 15000);
   }
+
+  /* ---------------------------------------------------- 타이틀 → 게임 진입 */
+  // mode: "new"(첫 모험) | "fresh"(처음부터) | "continue"(이어하기)
+  G.enterGame = function (mode) {
+    G.titleActive = false;
+    lastT = 0;
+    lastSave = 0;
+    S.seenIntro = true;
+    if (!S.playerName) S.playerName = playerName();
+    switchTab("field");
+    bgm("field");
+    renderAll();
+    save();
+    if (mode === "continue") {
+      const away = G.pendingOffline || 0;
+      if (away > 90) setTimeout(() => checkOffline(away), 420);
+    } else {
+      setTimeout(
+        () => toast("공주 " + playerName() + " · Lv.1 모험 시작! 상단 이름을 탭하면 스토리를 다시 볼 수 있어요", "gold"),
+        700
+      );
+    }
+    G.pendingOffline = 0;
+    return mode === "new" || mode === "fresh";
+  };
+
+  /* --------------------------------------------------------------- 처음부터 */
+  G.resetProgress = function () {
+    try {
+      localStorage.removeItem(G.SAVE_KEY);
+    } catch (e) {}
+    if (Dungeon.active) Dungeon.flee();
+    S = G.defaultState();
+    G.setState(S);
+    stats = G.computeStats();
+    S.hp = stats.maxHp;
+    S.playerName = playerName();
+    Combo.reset(true);
+    Field.mob = null;
+    Field.spawnDelay = 0.25;
+    Field.spawn();
+    fieldScene.setTheme(Field.stage().theme, 1000 + S.stage * 37);
+    renderAll();
+    renderAvatar();
+    save();
+    return S;
+  };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

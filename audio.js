@@ -124,6 +124,21 @@
     noise(start, 0.05, { filter: "lowpass", hz: 400, hzTo: 120, gain: 0.1, bus: A.bgmBus });
   }
 
+  // 팀파니 — 낮게 울리는 장엄한 타격
+  function timpani(start, gain) {
+    const g = gain == null ? 0.3 : gain;
+    tone(38, start, 0.5, { wave: "sine", gain: g, slideTo: 33, attack: 0.004, bus: A.bgmBus });
+    tone(45, start, 0.34, { wave: "triangle", gain: g * 0.35, slideTo: 38, bus: A.bgmBus });
+    noise(start, 0.16, { filter: "lowpass", hz: 900, hzTo: 180, gain: g * 0.5, bus: A.bgmBus });
+  }
+
+  // 심벌 크래시 — 금속이 부서지는 긴 잔향
+  function crash(start, gain) {
+    const g = gain == null ? 0.09 : gain;
+    noise(start, 0.9, { filter: "highpass", hz: 3200, hzTo: 7200, gain: g, bus: A.bgmBus });
+    noise(start, 0.5, { filter: "bandpass", hz: 5200, q: 0.6, gain: g * 0.7, bus: A.bgmBus });
+  }
+
   /* ---------------------------------------------------------------- tracks */
   // 스텝 = 16분음표. 32스텝 루프(2마디)
   const TRACKS = {
@@ -164,6 +179,45 @@
       ],
       pad: { 0: [50, 53, 57], 16: [46, 50, 53] },
     },
+
+    /* ---- 오프닝 : 웅장한 판타지 테마 (D단조 · 브라스/스트링/팀파니, 64스텝 4마디) ---- */
+    opening: {
+      bpm: 78,
+      len: 64,
+      leadWave: "sawtooth",
+      leadGain: 0.088,
+      leadDur: 5.4,
+      leadCut: 2600,
+      brassGain: 0.068,
+      padGain: 0.072,
+      drone: { 0: 38, 16: 34, 32: 41, 48: 36 },
+      bass: [
+        38, 0, 0, 0, 38, 0, 0, 0, 38, 0, 0, 0, 45, 0, 0, 0,
+        34, 0, 0, 0, 34, 0, 0, 0, 34, 0, 0, 0, 41, 0, 0, 0,
+        41, 0, 0, 0, 41, 0, 0, 0, 41, 0, 0, 0, 48, 0, 0, 0,
+        36, 0, 0, 0, 36, 0, 0, 0, 36, 0, 0, 0, 43, 0, 0, 0,
+      ],
+      lead: [
+        0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 0, 0, 77, 0, 0, 0,
+        0, 0, 0, 0, 82, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0,
+        0, 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0,
+        0, 0, 0, 0, 79, 0, 0, 0, 0, 0, 0, 0, 74, 0, 0, 0,
+      ],
+      // k=킥 h=하이햇 s=스네어 t=팀파니 c=심벌
+      drum: [
+        "c", "", "t", "", "", "", "", "", "", "", "", "", "t", "t", "t", "t",
+        "t", "", "", "", "", "", "", "", "t", "", "", "", "", "t", "t", "t",
+        "c", "t", "", "", "", "", "", "", "t", "", "", "", "", "t", "t", "t",
+        "t", "", "", "", "", "t", "t", "", "t", "", "", "", "t", "t", "t", "t",
+      ],
+      pad: { 0: [50, 53, 57], 16: [46, 50, 53], 32: [53, 57, 60], 48: [48, 52, 55] },
+      brass: {
+        0: [62, 65, 69], 8: [62, 65, 69],
+        16: [58, 62, 65], 24: [58, 62, 65],
+        32: [65, 69, 72], 40: [65, 69, 72],
+        48: [60, 64, 67], 56: [60, 64, 67],
+      },
+    },
   };
 
   function scheduleStep(tr, i, t) {
@@ -172,18 +226,37 @@
     if (b) tone(b, t, spb * 1.35, { wave: "triangle", gain: 0.24, bus: A.bgmBus, filter: "lowpass", cut: 900 });
     const l = tr.lead[i];
     if (l) {
-      tone(l, t, spb * 1.7, { wave: tr.leadWave, gain: tr.leadGain, bus: A.bgmBus, filter: "lowpass", cut: 3200 });
+      tone(l, t, spb * (tr.leadDur || 1.7), {
+        wave: tr.leadWave, gain: tr.leadGain, bus: A.bgmBus, filter: "lowpass", cut: tr.leadCut || 3200, attack: tr.leadDur ? 0.05 : 0.008,
+      });
       tone(l + 12, t, spb * 0.9, { wave: "triangle", gain: tr.leadGain * 0.35, bus: A.bgmBus });
     }
+    // 브라스 코드 스웰 (관악기처럼 부풀었다 잦아드는 화음)
+    if (tr.brass && tr.brass[i]) {
+      tr.brass[i].forEach((n) => {
+        tone(n, t, spb * 6.2, { wave: "sawtooth", gain: tr.brassGain || 0.05, attack: 0.12, bus: A.bgmBus, filter: "lowpass", cut: 1500, q: 0.8 });
+        tone(n + 12, t, spb * 5.2, { wave: "triangle", gain: (tr.brassGain || 0.05) * 0.4, attack: 0.2, bus: A.bgmBus });
+      });
+    }
     if (tr.pad && tr.pad[i]) {
-      tr.pad[i].forEach((n, k) =>
-        tone(n + 12, t, spb * 7, { wave: "triangle", gain: 0.045, attack: 0.08, bus: A.bgmBus })
-      );
+      const pg = tr.padGain || 0.045;
+      tr.pad[i].forEach((n) => {
+        tone(n + 12, t, spb * 7, { wave: "triangle", gain: pg, attack: 0.08, bus: A.bgmBus });
+        tone(n + 24, t, spb * 6, { wave: "sine", gain: pg * 0.35, attack: 0.18, bus: A.bgmBus });
+      });
+    }
+    // 낮게 깔리는 드론 — 웅장함의 바닥
+    if (tr.drone && tr.drone[i]) {
+      const d0 = tr.drone[i];
+      tone(d0, t, spb * 7.5, { wave: "sine", gain: 0.2, attack: 0.2, bus: A.bgmBus });
+      tone(d0 + 12, t, spb * 7, { wave: "triangle", gain: 0.06, attack: 0.25, bus: A.bgmBus });
     }
     const d = tr.drum[i];
     if (d === "k") kick(t);
     else if (d === "h") noise(t, 0.035, { filter: "highpass", hz: 7000, gain: 0.05, bus: A.bgmBus });
     else if (d === "s") noise(t, 0.09, { filter: "bandpass", hz: 2200, q: 0.7, gain: 0.09, bus: A.bgmBus });
+    else if (d === "t") timpani(t);
+    else if (d === "c") crash(t);
   }
 
   function tick() {
@@ -191,9 +264,10 @@
     if (!ctx || !state.track || !A.enabled) return;
     const tr = state.track;
     const spb = 60 / tr.bpm / 4;
+    const len = tr.len || 32;
     while (state.nextTime < ctx.currentTime + 0.16) {
       scheduleStep(tr, state.step, Math.max(state.nextTime, ctx.currentTime + 0.02));
-      state.step = (state.step + 1) % 32;
+      state.step = (state.step + 1) % len;
       state.nextTime += spb;
     }
   }
@@ -214,14 +288,39 @@
   }
 
   /* ------------------------------------------------------------------ API */
-  A.unlock = function () {
+  A.unlock = function (name) {
     const ctx = ensure();
     if (!ctx) return false;
     A.unlocked = true;
     if (ctx.state === "suspended") ctx.resume();
     if (A.enabled) {
-      A.bgm(state.name || "field");
+      A.bgm(name || state.name || "field");
     }
+    return true;
+  };
+
+  /* 첫 터치/클릭에서 오디오 잠금만 해제 (음악은 시작하지 않음 — 타이틀 화면용) */
+  A.wake = function () {
+    const ctx = ensure();
+    if (!ctx) return false;
+    A.unlocked = true;
+    if (ctx.state === "suspended") {
+      const pr = ctx.resume();
+      if (pr && pr.catch) pr.catch(() => {});
+    }
+    return true;
+  };
+
+  /* 오프닝 전용 : 첫 제스처에서 AudioContext 를 열고 웅장한 테마를 즉시 시작 */
+  A.startOpening = function () {
+    const ctx = ensure();
+    if (!ctx) return false;
+    A.unlocked = true;
+    if (ctx.state === "suspended") {
+      const pr = ctx.resume();
+      if (pr && pr.catch) pr.catch(() => {});
+    }
+    A.bgm("opening");
     return true;
   };
 
@@ -408,6 +507,32 @@
       });
       noise(start + 0.75, 0.5, { filter: "highpass", hz: 3000, gain: 0.06 });
     },
+    fanfare(start) {
+      // 상승 3연음 → 장엄한 4화음 → 심장을 울리는 저음 + 심벌
+      [62, 66, 69].forEach((n, i) =>
+        tone(n, start + i * 0.09, 0.2, { wave: "sawtooth", gain: 0.09, bus: A.sfxBus, filter: "lowpass", cut: 2600 })
+      );
+      [50, 62, 66, 69, 74].forEach((n) => {
+        tone(n, start + 0.28, 1.5, { wave: "sawtooth", gain: 0.05, attack: 0.05, bus: A.sfxBus, filter: "lowpass", cut: 2200 });
+        tone(n + 12, start + 0.3, 1.1, { wave: "triangle", gain: 0.028, attack: 0.08, bus: A.sfxBus });
+      });
+      noise(start + 0.26, 1.0, { filter: "highpass", hz: 3200, hzTo: 7600, gain: 0.09 });
+      noise(start, 0.55, { filter: "lowpass", hz: 700, hzTo: 110, gain: 0.2 });
+      tone(38, start, 0.9, { wave: "sine", gain: 0.34, slideTo: 30, bus: A.sfxBus });
+    },
+    page(start) {
+      noise(start, 0.32, { filter: "bandpass", hz: 700, hzTo: 2400, q: 0.5, gain: 0.07 });
+      tone(69, start + 0.02, 0.3, { wave: "triangle", gain: 0.05, slideTo: 74, bus: A.sfxBus });
+    },
+    type(start) {
+      toneHz(1400, start, 0.022, { wave: "square", gain: 0.018, bus: A.sfxBus });
+    },
+    crown(start) {
+      [784, 988, 1175, 1568, 1976].forEach((f, i) =>
+        toneHz(f, start + i * 0.055, 0.42, { wave: "triangle", gain: 0.065, bus: A.sfxBus })
+      );
+      toneHz(1568, start + 0.3, 0.7, { wave: "sine", gain: 0.04, bus: A.sfxBus });
+    },
     boss(start) {
       toneHz(98, start, 0.5, { wave: "sawtooth", gain: 0.12, slideTo: 74, bus: A.sfxBus, filter: "lowpass", cut: 700 });
       toneHz(147, start + 0.1, 0.4, { wave: "square", gain: 0.05, bus: A.sfxBus });
@@ -436,7 +561,7 @@
 
   // 첫 터치/클릭에서 AudioContext 잠금 해제 (모바일 브라우저 정책)
   function unlockOnce() {
-    A.unlock();
+    A.wake();
     if (A.unlocked) {
       document.removeEventListener("pointerdown", unlockOnce, true);
       document.removeEventListener("touchstart", unlockOnce, true);

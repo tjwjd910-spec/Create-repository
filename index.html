@@ -17,13 +17,13 @@
       <div class="phone">
         <!-- ================= 상단 HUD ================= -->
         <header class="hud">
-          <div class="avatar">
+          <div class="avatar" id="hudAvatar" role="button" tabindex="0" aria-label="공주 정보 · 닉네임 변경">
             <canvas id="avatarCv" width="96" height="96"></canvas>
             <span class="lvtag" id="hudLv">1</span>
           </div>
           <div class="hud-mid">
-            <div class="hud-name">
-              <span>공주 서쟈</span>
+            <div class="hud-name" id="hudNameBox" role="button" tabindex="0" title="탭해서 닉네임 변경 · 스토리 다시 보기">
+              <span class="hud-owner">공주 <b id="hudName">서쟈</b></span>
               <span class="title" id="hudTitle">어린 공주</span>
             </div>
             <div class="bar hp" id="hudHpBar">
@@ -325,6 +325,98 @@
             <span class="dot" id="dotBag"></span>
           </button>
         </nav>
+
+        <!-- ================= 오프닝 : 타이틀/로딩 ================= -->
+        <div class="boot on" id="boot">
+          <canvas class="boot-cv" id="bootCv"></canvas>
+          <div class="boot-shade"></div>
+          <div class="boot-content">
+            <div class="boot-head">
+              <div class="boot-crest">✦</div>
+              <div class="boot-latin">DUNGEON CRUSADER</div>
+            </div>
+
+            <div class="boot-logo">
+              <span class="bl-main">던전 크루세이더</span>
+              <span class="bl-sub"><i>✦</i> 빛의 공주 <i>✦</i></span>
+              <span class="bl-tag">빛 잃은 왕국, 스무 층의 심연 — 마지막 공주의 이야기</span>
+            </div>
+
+            <div class="boot-bottom">
+              <div class="boot-load">
+                <div class="boot-track"><i id="bootFill"></i><b class="bt-shine"></b></div>
+                <div class="boot-meta">
+                  <span id="bootTip">빛의 왕국을 불러오는 중…</span>
+                  <b id="bootPct">0%</b>
+                </div>
+              </div>
+
+              <div class="boot-actions" id="bootActions">
+                <button class="boot-btn" id="btnBootStart" hidden>✨ 모험 시작하기</button>
+                <button class="boot-btn ghost" id="btnBootFresh" hidden>🔄 처음부터</button>
+                <div class="boot-save" id="bootSave" hidden></div>
+              </div>
+
+              <div class="boot-foot">세로형 · 390×844 · 자동 저장 · Web Audio</div>
+            </div>
+          </div>
+
+          <!-- 처음부터 확인 -->
+          <div class="ask" id="bootAsk" hidden>
+            <div class="ask-card">
+              <div class="ask-ico">⚠️</div>
+              <h3>정말 처음부터 시작할까요?</h3>
+              <p id="bootAskText">지금까지의 모험이 사라집니다.</p>
+              <div class="ask-row">
+                <button class="boot-btn ghost sm" id="btnAskNo">취소</button>
+                <button class="boot-btn danger sm" id="btnAskYes">🔄 처음부터</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= 오프닝 : 스토리 컷신 ================= -->
+        <div class="cut" id="cut">
+          <canvas class="cut-cv" id="cutCv"></canvas>
+          <div class="cut-shade"></div>
+          <div class="cut-top">
+            <span class="cut-step" id="cutStep">1 / 4</span>
+            <button class="cut-skip" id="btnCutSkip">건너뛰기 ⏭</button>
+          </div>
+          <div class="cut-body" id="cutBody">
+            <div class="cut-chap" id="cutChap">프롤로그</div>
+            <p class="cut-text" id="cutText"></p>
+            <div class="cut-dots" id="cutDots"></div>
+            <button class="boot-btn" id="btnCutNext">다음 ▶</button>
+            <div class="cut-hint" id="cutHint">화면을 탭해도 넘어갑니다</div>
+          </div>
+        </div>
+
+        <!-- ================= 닉네임 설정 ================= -->
+        <div class="nick" id="nick">
+          <div class="nick-card">
+            <div class="nick-crown">👑</div>
+            <h2 id="nickTitle">공주님의 이름을 정해주세요</h2>
+            <p class="nick-sub" id="nickSub">빛의 왕관이 그대의 이름을 새기려 합니다.<br />1~10자 · 비워두면 <b>서쟈</b>로 시작합니다.</p>
+            <input class="nick-input" id="nickInput" maxlength="10" placeholder="서쟈" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <div class="nick-chips" id="nickChips"></div>
+            <button class="boot-btn" id="btnNickOk">👑 이 이름으로 출발!</button>
+            <div class="nick-hint">언제든 상단 이름을 탭하면 바꿀 수 있어요</div>
+          </div>
+        </div>
+
+        <!-- ================= 공주 정보 (HUD 탭) ================= -->
+        <div class="profile" id="profile">
+          <div class="profile-card">
+            <button class="profile-x" id="btnProfileX" aria-label="닫기">✕</button>
+            <div class="profile-av"><canvas id="profileCv" width="96" height="96"></canvas></div>
+            <div class="profile-name" id="profileName">공주 서쟈</div>
+            <div class="profile-meta" id="profileMeta">Lv.1 · 스테이지 1</div>
+            <button class="profile-row" id="btnRename"><span>✏️</span>닉네임 변경<i>›</i></button>
+            <button class="profile-row" id="btnReplayStory"><span>📖</span>스토리 다시 보기<i>›</i></button>
+            <button class="profile-row" id="btnPlayOpening"><span>🎬</span>오프닝부터 다시 보기<i>›</i></button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -335,5 +427,6 @@
     <script src="render.js"></script>
     <script src="audio.js"></script>
     <script src="ui.js"></script>
+    <script src="intro.js"></script>
   </body>
 </html>

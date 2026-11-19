@@ -654,6 +654,7 @@
     return {
       ver: G.VER,
       name: "서쟈",
+      playerName: "서쟈",
       lv: 1,
       exp: 0,
       gold: 60,
@@ -707,9 +708,13 @@
       const s = JSON.parse(raw);
       const d = defaultState();
       const merged = Object.assign(d, s);
-      merged.up = Object.assign(d.up, s.up || {});
-      merged.eq = Object.assign(d.eq, s.eq || {});
-      merged.stats = Object.assign(d.stats, s.stats || {});
+      // 부분 업그레이드/전적 필드가 있는 구버전 세이브도 NaN 없이 복원
+      merged.up = Object.assign({ atk: 0, hp: 0, crit: 0, critDmg: 0, speed: 0, gold: 0 }, s.up || {});
+      merged.eq = Object.assign({ weapon: null, armor: null, acc: null }, s.eq || {});
+      merged.stats = Object.assign(
+        { kills: 0, dungeons: 0, salvaged: 0, crits: 0, combos: 0, bestCombo: 0, quests: 0, goldGoblins: 0, mimics: 0, ults: 0 },
+        s.stats || {}
+      );
       // --- 구버전(ver1/ver2: 5층) 세이브 마이그레이션 ---
       if (!Array.isArray(merged.floors)) merged.floors = [];
       if (merged.floors.length !== G.FLOOR_COUNT) {
@@ -718,6 +723,11 @@
         merged.floors = nf;
       }
       if (!merged.quest || typeof merged.quest.idx !== "number") merged.quest = d.quest;
+      // --- 닉네임 마이그레이션 : playerName 이 없으면 기존 name(기본 "서쟈")을 승계 ---
+      const oldName = typeof merged.name === "string" ? merged.name.trim().slice(0, 10) : "";
+      const newName = typeof merged.playerName === "string" ? merged.playerName.trim().slice(0, 10) : "";
+      merged.playerName = newName || oldName || "서쟈";
+      merged.name = merged.playerName;
       if (typeof merged.ult !== "number" || !isFinite(merged.ult)) merged.ult = 0;
       merged.ult = clamp(merged.ult, 0, 100);
       merged.ver = G.VER;
