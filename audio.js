@@ -286,82 +286,139 @@
   };
 
   /* ------------------------------------------------------------------ SFX */
+  /* --------------- 효과음용 헬퍼 : Hz 를 MIDI 로 변환해 tone() 에 전달 --------------- */
+  const midiOf = (hz) => 69 + 12 * Math.log2(hz / 440);
+  function toneHz(hz, start, dur, opt) {
+    opt = opt || {};
+    const o = Object.assign({}, opt);
+    if (o.slideTo) o.slideTo = midiOf(o.slideTo);
+    tone(midiOf(hz), start, dur, o);
+  }
+
   const SFX = {
     click(start) {
-      tone(1046, start, 0.05, { wave: "square", gain: 0.06, bus: A.sfxBus });
+      toneHz(1046, start, 0.05, { wave: "square", gain: 0.06, bus: A.sfxBus });
     },
     swing(start) {
       noise(start, 0.13, { filter: "highpass", hz: 2400, hzTo: 900, gain: 0.13 });
     },
     hit(start) {
       noise(start, 0.1, { filter: "lowpass", hz: 2600, hzTo: 400, gain: 0.16 });
-      tone(150, start, 0.1, { wave: "sine", gain: 0.16, slideTo: 70, bus: A.sfxBus });
+      toneHz(150, start, 0.1, { wave: "sine", gain: 0.16, slideTo: 70, bus: A.sfxBus });
+      // 묵직한 서브베이스 펀치
+      toneHz(70, start, 0.16, { wave: "sine", gain: 0.26, slideTo: 38, bus: A.sfxBus });
+      noise(start + 0.01, 0.06, { filter: "lowpass", hz: 320, gain: 0.12 });
     },
     crit(start) {
       noise(start, 0.16, { filter: "bandpass", hz: 3000, hzTo: 900, gain: 0.2, q: 0.6 });
-      tone(1320, start, 0.12, { wave: "square", gain: 0.09, bus: A.sfxBus });
-      tone(1760, start + 0.05, 0.14, { wave: "triangle", gain: 0.08, bus: A.sfxBus });
-      tone(160, start, 0.12, { wave: "sine", gain: 0.16, slideTo: 60, bus: A.sfxBus });
+      toneHz(1320, start, 0.12, { wave: "square", gain: 0.09, bus: A.sfxBus });
+      toneHz(1760, start + 0.05, 0.14, { wave: "triangle", gain: 0.08, bus: A.sfxBus });
+      toneHz(160, start, 0.12, { wave: "sine", gain: 0.16, slideTo: 60, bus: A.sfxBus });
+      // 크래시 + 서브 펀치로 치명타를 더 묵직하게
+      toneHz(62, start, 0.24, { wave: "sine", gain: 0.34, slideTo: 30, bus: A.sfxBus });
+      noise(start, 0.3, { filter: "highpass", hz: 2600, hzTo: 7000, gain: 0.09 });
     },
     smash(start) {
-      tone(110, start, 0.2, { wave: "sawtooth", gain: 0.18, slideTo: 45, bus: A.sfxBus, filter: "lowpass", cut: 900 });
+      toneHz(110, start, 0.2, { wave: "sawtooth", gain: 0.18, slideTo: 45, bus: A.sfxBus, filter: "lowpass", cut: 900 });
       noise(start, 0.22, { filter: "lowpass", hz: 1800, hzTo: 200, gain: 0.2 });
+      toneHz(55, start, 0.3, { wave: "sine", gain: 0.32, slideTo: 24, bus: A.sfxBus });
     },
     flame(start) {
       noise(start, 0.38, { filter: "bandpass", hz: 500, hzTo: 2200, q: 0.5, gain: 0.22 });
-      tone(320, start, 0.3, { wave: "sawtooth", gain: 0.06, slideTo: 180, bus: A.sfxBus });
+      toneHz(320, start, 0.3, { wave: "sawtooth", gain: 0.06, slideTo: 180, bus: A.sfxBus });
+      toneHz(58, start, 0.26, { wave: "sine", gain: 0.22, slideTo: 32, bus: A.sfxBus });
+    },
+    ult(start) {
+      // 상승 스윕 → 성광 코드 → 저음 폭발
+      toneHz(392, start, 0.34, { wave: "sawtooth", gain: 0.1, slideTo: 1568, bus: A.sfxBus, filter: "lowpass", cut: 900, cutTo: 6000 });
+      [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => {
+        toneHz(f, start + 0.16 + i * 0.012, 0.72, { wave: "triangle", gain: 0.075, bus: A.sfxBus });
+        toneHz(f * 2, start + 0.16 + i * 0.012, 0.5, { wave: "sine", gain: 0.04, bus: A.sfxBus });
+      });
+      noise(start + 0.14, 0.5, { filter: "highpass", hz: 1400, hzTo: 8000, gain: 0.14 });
+      toneHz(46, start + 0.16, 0.72, { wave: "sine", gain: 0.42, slideTo: 22, bus: A.sfxBus });
+      noise(start + 0.16, 0.55, { filter: "lowpass", hz: 900, hzTo: 120, gain: 0.22 });
+    },
+    combo(start) {
+      toneHz(880, start, 0.06, { wave: "square", gain: 0.05, bus: A.sfxBus });
+      toneHz(1320, start + 0.035, 0.07, { wave: "square", gain: 0.045, bus: A.sfxBus });
+    },
+    shield(start) {
+      toneHz(440, start, 0.2, { wave: "triangle", gain: 0.1, slideTo: 880, bus: A.sfxBus });
+      noise(start, 0.24, { filter: "bandpass", hz: 900, hzTo: 2600, gain: 0.09, q: 1.4 });
+    },
+    shieldBreak(start) {
+      noise(start, 0.26, { filter: "highpass", hz: 2200, hzTo: 6000, gain: 0.2 });
+      toneHz(1180, start, 0.18, { wave: "square", gain: 0.1, slideTo: 520, bus: A.sfxBus });
+      toneHz(60, start, 0.24, { wave: "sine", gain: 0.3, slideTo: 26, bus: A.sfxBus });
+    },
+    elite(start) {
+      toneHz(196, start, 0.28, { wave: "sawtooth", gain: 0.13, slideTo: 294, bus: A.sfxBus, filter: "lowpass", cut: 1200 });
+      toneHz(392, start + 0.1, 0.22, { wave: "square", gain: 0.06, bus: A.sfxBus });
+    },
+    mimic(start) {
+      toneHz(330, start, 0.12, { wave: "square", gain: 0.09, slideTo: 660, bus: A.sfxBus });
+      noise(start + 0.1, 0.2, { filter: "bandpass", hz: 1800, hzTo: 600, gain: 0.14, q: 2 });
+    },
+    goldgoblin(start) {
+      [784, 988, 1175, 1568].forEach((f, i) => toneHz(f, start + i * 0.06, 0.16, { wave: "triangle", gain: 0.08, bus: A.sfxBus }));
+      noise(start, 0.18, { filter: "highpass", hz: 4000, gain: 0.07 });
+    },
+    quest(start) {
+      [659, 880, 1175].forEach((f, i) => toneHz(f, start + i * 0.07, 0.16, { wave: "square", gain: 0.07, bus: A.sfxBus }));
+      toneHz(1568, start + 0.22, 0.26, { wave: "triangle", gain: 0.07, bus: A.sfxBus });
     },
     guard(start) {
-      tone(1568, start, 0.18, { wave: "triangle", gain: 0.11, bus: A.sfxBus });
-      tone(2093, start + 0.02, 0.2, { wave: "sine", gain: 0.07, bus: A.sfxBus });
+      toneHz(1568, start, 0.18, { wave: "triangle", gain: 0.11, bus: A.sfxBus });
+      toneHz(2093, start + 0.02, 0.2, { wave: "sine", gain: 0.07, bus: A.sfxBus });
       noise(start, 0.12, { filter: "highpass", hz: 4000, gain: 0.07 });
     },
     counter(start) {
       noise(start, 0.14, { filter: "bandpass", hz: 2800, hzTo: 1200, gain: 0.15 });
-      tone(880, start, 0.1, { wave: "square", gain: 0.08, bus: A.sfxBus });
+      toneHz(880, start, 0.1, { wave: "square", gain: 0.08, bus: A.sfxBus });
     },
     hurt(start) {
-      tone(300, start, 0.14, { wave: "square", gain: 0.1, slideTo: 120, bus: A.sfxBus });
+      toneHz(300, start, 0.14, { wave: "square", gain: 0.1, slideTo: 120, bus: A.sfxBus });
       noise(start, 0.1, { filter: "lowpass", hz: 1200, gain: 0.1 });
     },
     potion(start) {
       [523, 659, 784, 1047].forEach((f, i) => {
-        tone(f, start + i * 0.055, 0.16, { wave: "sine", gain: 0.1, bus: A.sfxBus });
+        toneHz(f, start + i * 0.055, 0.16, { wave: "sine", gain: 0.1, bus: A.sfxBus });
       });
     },
     coin(start) {
-      tone(988, start, 0.07, { wave: "square", gain: 0.06, bus: A.sfxBus });
-      tone(1319, start + 0.06, 0.1, { wave: "square", gain: 0.05, bus: A.sfxBus });
+      toneHz(988, start, 0.07, { wave: "square", gain: 0.06, bus: A.sfxBus });
+      toneHz(1319, start + 0.06, 0.1, { wave: "square", gain: 0.05, bus: A.sfxBus });
     },
     drop(start) {
       [1047, 1319, 1568, 2093].forEach((f, i) => {
-        tone(f, start + i * 0.05, 0.24, { wave: "triangle", gain: 0.075, bus: A.sfxBus });
+        toneHz(f, start + i * 0.05, 0.24, { wave: "triangle", gain: 0.075, bus: A.sfxBus });
       });
     },
     levelup(start) {
       const seq = [523, 659, 784, 1047, 1319];
-      seq.forEach((f, i) => tone(f, start + i * 0.075, 0.3, { wave: "square", gain: 0.075, bus: A.sfxBus }));
-      tone(1047, start + 0.4, 0.5, { wave: "triangle", gain: 0.08, bus: A.sfxBus });
+      seq.forEach((f, i) => toneHz(f, start + i * 0.075, 0.3, { wave: "square", gain: 0.075, bus: A.sfxBus }));
+      toneHz(1047, start + 0.4, 0.5, { wave: "triangle", gain: 0.08, bus: A.sfxBus });
     },
     clear(start) {
       const seq = [523, 659, 784, 1047, 784, 1047, 1319];
       seq.forEach((f, i) => {
-        tone(f, start + i * 0.11, 0.34, { wave: "square", gain: 0.07, bus: A.sfxBus });
-        tone(f / 2, start + i * 0.11, 0.3, { wave: "triangle", gain: 0.05, bus: A.sfxBus });
+        toneHz(f, start + i * 0.11, 0.34, { wave: "square", gain: 0.07, bus: A.sfxBus });
+        toneHz(f / 2, start + i * 0.11, 0.3, { wave: "triangle", gain: 0.05, bus: A.sfxBus });
       });
       noise(start + 0.75, 0.5, { filter: "highpass", hz: 3000, gain: 0.06 });
     },
     boss(start) {
-      tone(98, start, 0.5, { wave: "sawtooth", gain: 0.12, slideTo: 74, bus: A.sfxBus, filter: "lowpass", cut: 700 });
-      tone(147, start + 0.1, 0.4, { wave: "square", gain: 0.05, bus: A.sfxBus });
+      toneHz(98, start, 0.5, { wave: "sawtooth", gain: 0.12, slideTo: 74, bus: A.sfxBus, filter: "lowpass", cut: 700 });
+      toneHz(147, start + 0.1, 0.4, { wave: "square", gain: 0.05, bus: A.sfxBus });
     },
     on(start) {
-      tone(660, start, 0.06, { wave: "square", gain: 0.06, bus: A.sfxBus });
-      tone(990, start + 0.06, 0.08, { wave: "square", gain: 0.05, bus: A.sfxBus });
+      toneHz(660, start, 0.06, { wave: "square", gain: 0.06, bus: A.sfxBus });
+      toneHz(990, start + 0.06, 0.08, { wave: "square", gain: 0.05, bus: A.sfxBus });
     },
     off(start) {
-      tone(440, start, 0.07, { wave: "square", gain: 0.06, bus: A.sfxBus });
-      tone(330, start + 0.06, 0.09, { wave: "square", gain: 0.05, bus: A.sfxBus });
+      toneHz(440, start, 0.07, { wave: "square", gain: 0.06, bus: A.sfxBus });
+      toneHz(330, start + 0.06, 0.09, { wave: "square", gain: 0.05, bus: A.sfxBus });
     },
   };
 

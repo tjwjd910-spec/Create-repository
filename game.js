@@ -6,8 +6,9 @@
   "use strict";
 
   const G = (window.G = window.G || {});
-  G.VER = 2;
+  G.VER = 3;
   G.SAVE_KEY = "dungeonCrusader.save.v1";
+  G.FLOOR_COUNT = 20;
 
   /* ---------------------------------------------------------------- utils */
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -69,35 +70,136 @@
     golem: { name: "돌 골렘", sprite: "golem", hpMul: 1.6, atkMul: 1.1, interval: 2.3, scale: 3.6 },
     imp: { name: "화염 임프", sprite: "imp", hpMul: 0.9, atkMul: 1.35, interval: 1.5, scale: 3 },
     demon: { name: "심연 마귀", sprite: "demon", hpMul: 1.5, atkMul: 1.5, interval: 1.8, scale: 3.6 },
+    mimic: { name: "미믹 보물상자", sprite: "chest", hpMul: 0.8, atkMul: 1.1, interval: 1.9, scale: 3.6 },
   };
 
-  G.FLOORS = [
+  /* ------------------------------------------------------------- 던전 20층
+   * 4층마다 테마(배경·몬스터 색·보스)가 바뀌고, 고층일수록 웨이브가 늘어난다.
+   * boss.pattern = 보스가 순서대로 쓰는 기술 (attack/heavy/combo/shield/buff)
+   */
+  const FLOOR_PLAN = [
     {
-      floor: 1, name: "무너진 지하 성당", rec: 3, hp: 70, atk: 6, waves: 3,
-      boss: { key: "goblin", name: "고블린 우두머리", hp: 240, atk: 10 },
-      reward: { dc: 8, gem: 3, stone: 2, gold: 180 },
+      chapter: "고블린 소굴", tag: "goblin", color: "#7bd88f",
+      mobs: ["slime", "goblin", "bat", "wolf"],
+      floors: [
+        ["무너진 지하 성당", "plain", "goblin", "고블린 우두머리"],
+        ["버려진 수로", "forest", "goblin", "고블린 주술사"],
+        ["고블린 야영지", "forest", "orc", "고블린 대장"],
+        ["초원의 왕좌", "plain", "goblin", "고블린 왕"],
+      ],
     },
     {
-      floor: 2, name: "해골의 납골당", rec: 6, hp: 140, atk: 10, waves: 3,
-      boss: { key: "skeleton", name: "해골 기사장", hp: 460, atk: 15 },
-      reward: { dc: 14, gem: 5, stone: 3, gold: 400 },
+      chapter: "해골 지하묘지", tag: "grave", color: "#b9a7ff",
+      mobs: ["skeleton", "bat", "wolf"],
+      floors: [
+        ["해골의 납골당", "grave", "skeleton", "해골 기사장"],
+        ["잊힌 무덤길", "grave", "skeleton", "망자 사제"],
+        ["달빛 성소", "grave", "skeleton", "달의 망령"],
+        ["뼈의 왕좌", "grave", "skeleton", "해골 대왕"],
+      ],
     },
     {
-      floor: 3, name: "오크의 투기장", rec: 9, hp: 250, atk: 16, waves: 3,
-      boss: { key: "orc", name: "오크 대족장", hp: 820, atk: 23 },
-      reward: { dc: 22, gem: 8, stone: 5, gold: 800 },
+      chapter: "용암 화염 동굴", tag: "lava", color: "#ff8a4a",
+      mobs: ["imp", "golem", "demon"],
+      floors: [
+        ["용암 협곡", "lava", "imp", "화염 군주"],
+        ["재의 회랑", "lava", "imp", "불꽃 마귀"],
+        ["심장부 용광로", "lava", "golem", "용암 골렘"],
+        ["불의 제단", "lava", "demon", "화염 마신"],
+      ],
     },
     {
-      floor: 4, name: "용암 심층부", rec: 14, hp: 430, atk: 24, waves: 3,
-      boss: { key: "imp", name: "화염 군주", hp: 1500, atk: 33 },
-      reward: { dc: 34, gem: 12, stone: 8, gold: 1500 },
+      chapter: "얼음 수정 성채", tag: "ice", color: "#8fd8ff",
+      mobs: ["golem", "wolf", "skeleton"],
+      floors: [
+        ["얼어붙은 성문", "ice", "golem", "서리 수호자"],
+        ["수정 회랑", "ice", "skeleton", "빙결 기사"],
+        ["한기의 성소", "ice", "skeleton", "얼음 여왕"],
+        ["영원한 빙궁", "ice", "golem", "빙결 군주"],
+      ],
     },
     {
-      floor: 5, name: "심연의 옥좌", rec: 20, hp: 700, atk: 33, waves: 3,
-      boss: { key: "demon", name: "심연의 마왕", hp: 2500, atk: 45 },
-      reward: { dc: 55, gem: 20, stone: 12, gold: 3000 },
+      chapter: "심연의 마왕성", tag: "abyss", color: "#c39cff",
+      mobs: ["demon", "imp", "golem"],
+      floors: [
+        ["심연의 문", "abyss", "demon", "심연 파수꾼"],
+        ["어둠의 계단", "abyss", "demon", "그림자 군주"],
+        ["마왕의 회랑", "abyss", "demon", "타락한 성기사"],
+        ["심연의 옥좌", "abyss", "demon", "심연의 마왕"],
+      ],
     },
   ];
+
+  const BOSS_PATTERNS = [
+    [["attack", "heavy", "attack", "heavy"], ["attack", "heavy", "attack", "heavy"], ["attack", "heavy", "attack", "heavy"], ["attack", "shield", "heavy", "attack", "heavy"]],
+    [["attack", "shield", "heavy", "attack", "heavy", "shield"], ["attack", "shield", "heavy", "attack", "heavy", "shield"], ["attack", "shield", "heavy", "attack", "heavy", "shield"], ["shield", "heavy", "attack", "shield", "heavy", "attack"]],
+    [["heavy", "attack", "combo", "heavy", "attack"], ["heavy", "attack", "combo", "heavy", "attack"], ["heavy", "combo", "attack", "heavy", "combo"], ["combo", "heavy", "attack", "combo", "heavy"]],
+    [["shield", "heavy", "combo", "attack", "shield", "combo"], ["shield", "heavy", "combo", "attack", "shield", "combo"], ["combo", "shield", "heavy", "combo", "attack"], ["shield", "combo", "heavy", "shield", "combo", "heavy"]],
+    [["heavy", "combo", "shield", "buff", "combo", "heavy"], ["heavy", "combo", "shield", "buff", "combo", "heavy"], ["combo", "heavy", "shield", "combo", "buff", "heavy"], ["combo", "shield", "buff", "combo", "heavy", "combo"]],
+  ];
+
+  function buildFloors() {
+    const out = [];
+    FLOOR_PLAN.forEach((ch, ci) => {
+      ch.floors.forEach((row, i) => {
+        const floor = out.length + 1;
+        const waves = 4 + (floor >= 6 ? 1 : 0) + (floor >= 12 ? 1 : 0);
+        const hp = Math.round(70 * Math.pow(1.3, floor - 1));
+        const atk = Math.round(6 * Math.pow(1.17, floor - 1));
+        const bossHp = Math.round(hp * (3.4 + ci * 0.22));
+        const bossAtk = Math.round(atk * 1.45);
+        out.push({
+          floor,
+          chapter: ch.chapter,
+          chapterIdx: ci,
+          tag: ch.tag,
+          color: ch.color,
+          theme: row[1],
+          name: row[0],
+          mobs: ch.mobs,
+          rec: Math.round(3 + (floor - 1) * 2.2),
+          hp,
+          atk,
+          waves,
+          boss: {
+            key: row[2],
+            name: row[3],
+            hp: bossHp,
+            atk: bossAtk,
+            shield: Math.round(bossHp * (0.16 + ci * 0.015)),
+            combo: ci >= 3 ? 3 : 2,
+            pattern: BOSS_PATTERNS[ci][i],
+          },
+          reward: {
+            dc: Math.round(8 * Math.pow(1.16, floor - 1)),
+            gem: Math.round(3 * Math.pow(1.14, floor - 1)),
+            stone: Math.round(2 * Math.pow(1.13, floor - 1)),
+            gold: Math.round(180 * Math.pow(1.28, floor - 1)),
+          },
+        });
+      });
+    });
+    return out;
+  }
+
+  G.FLOORS = buildFloors();
+  G.chapter = function (i) {
+    return G.FLOORS[clamp(i, 0, G.FLOORS.length - 1)].chapterIdx;
+  };
+
+  // 챕터별 몬스터 색 변조 (용암=붉게, 얼음=푸르게, 심연=보랏빛)
+  const CHAPTER_TINT = [
+    null,
+    { v: "#b9a7e8", V: "#6a539e", b: "#5a4a7a", B: "#2f2544", M: "#a99ac8", m: "#d6ccef" },
+    { v: "#ff7a4a", V: "#a8311c", b: "#7a2d1c", B: "#3d140c", M: "#8a4a3a", m: "#c47a5a", z: "#7a4030", Z: "#4a2018" },
+    { v: "#7fd4ff", V: "#2f7aa8", b: "#4a6b8a", B: "#2a3f55", M: "#9fc8e0", m: "#cfe9f8", z: "#8fb4c8", Z: "#5a7a8f" },
+    { v: "#b07cff", V: "#5a2f9e", b: "#4a2f6a", B: "#26163d", M: "#8f7ac0", m: "#c0b0e8", z: "#6a5a8a", Z: "#3d3355", r: "#ff4a7a", R: "#8f1f3a" },
+  ];
+  G.chapterTint = function (ci) {
+    return CHAPTER_TINT[clamp(ci, 0, 4)] || null;
+  };
+  G.GOLD_TINT = { v: "#ffd166", V: "#a8761b", w: "#fff8dc", e: "#3a2a00", b: "#9a6b1e", B: "#5a3d0c" };
+  G.ELITE_TINT = { v: "#ff9a6a", V: "#b03a20", b: "#8a3a22", B: "#4a1a10" };
 
   G.UPGRADES = [
     { id: "atk", name: "공격력", icon: "⚔️", base: 50, growth: 1.17, max: 200, eff: (l) => "+" + (l * 4 + Math.floor(l * l * 0.35)) + " 공격력" },
@@ -570,11 +672,14 @@
       sound: true,
       inv: [],
       eq: { weapon: null, armor: null, acc: null },
-      floors: [false, false, false, false, false],
+      floors: new Array(G.FLOOR_COUNT).fill(false),
+      quest: { idx: 0, prog: 0, done: false },
+      ult: 0,
+      haptics: true,
       lastSeen: Date.now(),
       playtime: 0,
       adsSeen: 0,
-      stats: { kills: 0, dungeons: 0, salvaged: 0 },
+      stats: { kills: 0, dungeons: 0, salvaged: 0, crits: 0, combos: 0, bestCombo: 0, quests: 0, goldGoblins: 0, mimics: 0, ults: 0 },
     };
   }
 
@@ -605,7 +710,17 @@
       merged.up = Object.assign(d.up, s.up || {});
       merged.eq = Object.assign(d.eq, s.eq || {});
       merged.stats = Object.assign(d.stats, s.stats || {});
-      if (!Array.isArray(merged.floors) || merged.floors.length !== 5) merged.floors = [false, false, false, false, false];
+      // --- 구버전(ver1/ver2: 5층) 세이브 마이그레이션 ---
+      if (!Array.isArray(merged.floors)) merged.floors = [];
+      if (merged.floors.length !== G.FLOOR_COUNT) {
+        const nf = new Array(G.FLOOR_COUNT).fill(false);
+        for (let i = 0; i < Math.min(merged.floors.length, G.FLOOR_COUNT); i++) nf[i] = !!merged.floors[i];
+        merged.floors = nf;
+      }
+      if (!merged.quest || typeof merged.quest.idx !== "number") merged.quest = d.quest;
+      if (typeof merged.ult !== "number" || !isFinite(merged.ult)) merged.ult = 0;
+      merged.ult = clamp(merged.ult, 0, 100);
+      merged.ver = G.VER;
       if (!Array.isArray(merged.inv)) merged.inv = [];
       return merged;
     } catch (e) {
@@ -879,4 +994,53 @@
     return Math.round((4 + stage * 1.6) * Math.pow(1.2, stage - 1));
   };
   G.KILLS_PER_STAGE = 8;
+
+  /* ------------------------------------------------------------- 상단 미션
+   * 무한 반복 퀘스트: 완료 → 탭해서 수령 → 다음 미션 자동 연결
+   */
+  const REWARD_NAME = { gems: "보석", dc: "던전코인", stones: "강화석", gold: "골드" };
+  const REWARD_UNIT = { gems: "개", dc: "", stones: "개", gold: "" };
+  G.rewardName = REWARD_NAME;
+
+  const QUEST_PLAN = [
+    { kind: "kill", base: 14, step: 6, rw: "gems", ramt: 5, rstep: 1, icon: "🗡️" },
+    { kind: "wave", base: 4, step: 2, rw: "stones", ramt: 2, rstep: 1, icon: "🌊" },
+    { kind: "crit", base: 8, step: 3, rw: "dc", ramt: 3, rstep: 1, icon: "💥" },
+    { kind: "combo", base: 15, step: 5, rw: "gold", ramt: 300, rstep: 200, icon: "🔥" },
+    { kind: "boss", base: 1, step: 1, rw: "gems", ramt: 8, rstep: 2, icon: "👑" },
+  ];
+
+  function questText(kind, t) {
+    if (kind === "kill") return "몬스터 " + t + "마리 처치";
+    if (kind === "wave") return "던전 웨이브 " + t + "회 클리어";
+    if (kind === "crit") return "치명타 " + t + "회 적중";
+    if (kind === "combo") return t + " 콤보 달성";
+    if (kind === "boss") return "보스 " + t + "회 처치";
+    return "미션";
+  }
+
+  G.questTemplate = function (idx) {
+    const p = QUEST_PLAN[idx % QUEST_PLAN.length];
+    const loop = Math.floor(idx / QUEST_PLAN.length);
+    const target = p.base + p.step * loop;
+    const amount = Math.round(p.ramt + p.rstep * loop);
+    return {
+      idx: idx,
+      kind: p.kind,
+      icon: p.icon,
+      target: target,
+      progress: 0,
+      reward: { type: p.rw, amount: amount },
+      text: questText(p.kind, target),
+      rewardText: REWARD_NAME[p.rw] + " " + fmt(amount) + REWARD_UNIT[p.rw],
+    };
+  };
+
+  G.giveReward = function (reward) {
+    if (!reward) return;
+    if (reward.type === "gold") state.gold += reward.amount;
+    else if (reward.type === "gems") state.gems += reward.amount;
+    else if (reward.type === "dc") state.dc += reward.amount;
+    else if (reward.type === "stones") state.stones += reward.amount;
+  };
 })();

@@ -536,6 +536,27 @@
     g.fillText(txt, x, y);
   }
 
+  /* --------------------------------------------- 흰색 실루엣 (피격 플래시) */
+  const whiteCache = new Map();
+  function whiteOf(key, scale, tint) {
+    const id = key + "|" + scale + "|" + (tint ? "t" : "");
+    if (whiteCache.has(id)) return whiteCache.get(id);
+    const src = G.sprite(key, scale, tint || null);
+    if (!src) return null;
+    const c = document.createElement("canvas");
+    c.width = src.width;
+    c.height = src.height;
+    const g2 = c.getContext("2d");
+    g2.imageSmoothingEnabled = false;
+    g2.drawImage(src, 0, 0);
+    g2.globalCompositeOperation = "source-in";
+    g2.fillStyle = "#ffffff";
+    g2.fillRect(0, 0, c.width, c.height);
+    whiteCache.set(id, c);
+    return c;
+  }
+  G.whiteSprite = whiteOf;
+
   /* ----------------------------------------------------------------- Scene */
   class Scene {
     constructor(canvas, opts) {
@@ -549,6 +570,10 @@
       this.seed = 12345;
       this.t = 0;
       this.shake = 0;
+      this.hitstop = 0;
+      this.flash = 0;
+      this.flashColor = "255,255,255";
+      this.slowmo = 0;
       this.fx = [];
       this.amb = [];
       this.hero = {
@@ -577,6 +602,12 @@
         alpha: 1,
         showBar: true,
         boss: false,
+        elite: false,
+        tint: null,
+        knock: 0,
+        knockDir: 1,
+        shield: 0,
+        shieldMax: 0,
       };
       this.bg = document.createElement("canvas");
       this.bgCtx = this.bg.getContext("2d");
@@ -653,14 +684,110 @@
         type: "text",
         x: x + (Math.random() - 0.5) * 26,
         y: y + (Math.random() - 0.5) * 10,
-        vy: -30,
-        life: 0.62,
-        max: 0.62,
+        vy: crit ? -46 : -30,
+        life: crit ? 0.86 : 0.62,
+        max: crit ? 0.86 : 0.62,
         txt: String(amount),
         color: colorOverride || (crit ? "#ffce54" : "#ffffff"),
-        size: crit ? 22 : 16,
+        size: crit ? 27 : 16.5,
         crit: !!crit,
+        bounce: !!crit,
       });
+    }
+
+    /* ---------------- 타격감 (Juice) ---------------- */
+    // 짧은 히트스톱: 렌더 갱신을 순간 멈춰 타격을 묵직하게
+    hitStop(sec) {
+      this.hitstop = Math.max(this.hitstop, sec);
+    }
+    shakeAdd(v) {
+      this.shake = Math.max(this.shake, v);
+    }
+    screenFlash(color, a) {
+      this.flashColor = color || "255,255,255";
+      this.flash = Math.max(this.flash, a == null ? 0.5 : a);
+    }
+    // 여러 갈래의 검기 궤적
+    arcs(x1, y1, x2, y2, color, n) {
+      n = n || 3;
+      for (let i = 0; i < n; i++) {
+        const off = (i - (n - 1) / 2) * 9;
+        this.fx.push({
+          type: "slash",
+          x1: x1,
+          y1: y1 + off * 0.7,
+          x2: x2,
+          y2: y2 + off,
+          life: 0.22 + i * 0.045,
+          max: 0.22 + i * 0.045,
+          color: color || "#dff3ff",
+          bend: 22 + i * 12,
+          delay: i * 0.035,
+        });
+      }
+    }
+    // 치명타 별·스파크 폭발
+    critBurst(x, y, color) {
+      color = color || "#ffd479";
+      this.burst(x, y, color, 12 + Math.floor(Math.random() * 9), 170);
+      for (let i = 0; i < 5; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 60 + Math.random() * 130;
+        this.fx.push({
+          type: "star",
+          x: x,
+          y: y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          life: 0.42 + Math.random() * 0.3,
+          max: 0.72,
+          color: i % 2 ? "#fff6c8" : color,
+          s: 5 + Math.random() * 4,
+          spin: Math.random() * 6,
+        });
+      }
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.34, max: 0.34, color: color, w: 4 });
+    }
+    // 불꽃 입자
+    embers(x, y, n, spread) {
+      n = n || 16;
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.9;
+        const sp = (spread || 120) * (0.4 + Math.random());
+        this.fx.push({
+          type: "ember",
+          x: x + (Math.random() - 0.5) * 22,
+          y: y + (Math.random() - 0.5) * 12,
+          vx: Math.cos(a) * sp * 0.6,
+          vy: Math.sin(a) * sp,
+          life: 0.36 + Math.random() * 0.42,
+          max: 0.78,
+          color: Math.random() < 0.45 ? "#ffd06a" : "#ff7a32",
+          s: 2 + Math.random() * 2.5,
+        });
+      }
+    }
+    // 궁극기 [성광 폭격] — 빛의 기둥 + 폭발
+    ultFx(x, y) {
+      this.screenFlash("255,240,190", 0.85);
+      this.shakeAdd(26);
+      this.hitStop(0.085);
+      for (let i = 0; i < 7; i++) {
+        this.fx.push({
+          type: "beam",
+          x: x + (i - 3) * 26,
+          w: 10 + Math.random() * 22,
+          life: 0.55 + Math.random() * 0.3,
+          max: 0.85,
+          delay: i * 0.02,
+          color: i % 2 ? "#fff6c8" : "#ffe066",
+        });
+      }
+      this.fx.push({ type: "blast", x: x, y: y, life: 0.72, max: 0.72, color: "#fff2b0" });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.7, max: 0.7, color: "#ffe066", w: 6 });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.95, max: 0.95, color: "#fff6c8", w: 3 });
+      this.burst(x, y, "#ffd479", 26, 220);
+      this.critBurst(x, y - 10, "#fff2b0");
     }
     text(x, y, txt, color, size, life) {
       this.fx.push({
@@ -720,6 +847,11 @@
 
     /* ---- update ---- */
     update(dt) {
+      // 히트스톱: 이 프레임 동안 연출을 얼려 타격 순간을 강조
+      if (this.hitstop > 0) {
+        this.hitstop = Math.max(0, this.hitstop - dt);
+        return;
+      }
       this.t += dt;
       this.hero.bob = Math.sin(this.t * 3.4) * 1.2;
       if (this.hero.lunge > 0) this.hero.lunge = Math.max(0, this.hero.lunge - dt * 4.2);
@@ -729,6 +861,8 @@
       if (this.enemy.spawn > 0) this.enemy.spawn = Math.max(0, this.enemy.spawn - dt * 2.2);
       if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 26);
       if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.6);
+      if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 3.4);
+      if (this.enemy.knock > 0) this.enemy.knock = Math.max(0, this.enemy.knock - dt * 4.2);
 
       const T = THEMES[this.theme] || THEMES.plain;
       for (const p of this.amb) {
@@ -753,6 +887,15 @@
           f.x += f.vx * dt;
           f.y += f.vy * dt;
           f.vy += 240 * dt;
+        } else if (f.type === "star") {
+          f.x += f.vx * dt * Math.max(0, f.life / f.max);
+          f.y += f.vy * dt * Math.max(0, f.life / f.max);
+          f.spin += dt * 7;
+        } else if (f.type === "ember") {
+          f.x += f.vx * dt;
+          f.y += f.vy * dt;
+          f.vy -= 40 * dt;
+          f.vx *= 1 - dt * 2.4;
         } else if (f.type === "coin") {
           if (f.delay > 0) f.delay -= dt;
         }
@@ -768,12 +911,18 @@
       if (this.bgDirty) this.rebuildBg();
       g.save();
       if (this.shake > 0.2) {
-        g.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
+        const s = this.shake;
+        g.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+        if (s > 8) g.rotate(((Math.random() - 0.5) * s) / 900);
       }
-      g.clearRect(-20, -20, W + 40, H + 40);
+      g.clearRect(-40, -40, W + 80, H + 80);
       g.drawImage(this.bg, 0, 0, W, H);
 
       this.drawAmbient(g);
+      // 궁극기 빛기둥 — 스프라이트 뒤에서 쏟아진다
+      for (const f of this.fx) {
+        if (f.type === "beam") this.drawBeam(g, f);
+      }
       this.drawEnemy(g);
       this.drawHero(g);
 
@@ -785,6 +934,32 @@
         if (f.type === "slash") this.drawSlash(g, f);
       }
       for (const f of this.fx) {
+        if (f.type === "blast") this.drawBlast(g, f);
+        if (f.type === "star") {
+          g.save();
+          g.globalAlpha = Math.max(0, f.life / f.max);
+          g.translate(f.x, f.y);
+          g.rotate(f.spin);
+          g.fillStyle = f.color;
+          const s = f.s;
+          g.beginPath();
+          g.moveTo(0, -s);
+          g.lineTo(s * 0.28, -s * 0.28);
+          g.lineTo(s, 0);
+          g.lineTo(s * 0.28, s * 0.28);
+          g.lineTo(0, s);
+          g.lineTo(-s * 0.28, s * 0.28);
+          g.lineTo(-s, 0);
+          g.lineTo(-s * 0.28, -s * 0.28);
+          g.closePath();
+          g.fill();
+          g.restore();
+        }
+        if (f.type === "ember") {
+          g.globalAlpha = Math.min(1, f.life / f.max) * 0.95;
+          px(g, f.x, f.y, f.s, f.s, f.color);
+          g.globalAlpha = 1;
+        }
         if (f.type === "spark") {
           g.globalAlpha = Math.max(0, f.life / f.max);
           px(g, f.x, f.y, f.s, f.s, f.color);
@@ -818,6 +993,51 @@
         g.fillStyle = hf;
         g.fillRect(0, 0, W, H);
       }
+      // 타격 순간 화면 번쩍임 (치명타·궁극기)
+      if (this.flash > 0.01) {
+        g.fillStyle = "rgba(" + this.flashColor + "," + Math.min(0.62, this.flash).toFixed(3) + ")";
+        g.fillRect(-40, -40, W + 80, H + 80);
+      }
+      g.restore();
+    }
+
+    drawBeam(g, f) {
+      if (f.delay > 0) {
+        f.delay -= 0.016;
+        return;
+      }
+      const H = this.H;
+      const k = 1 - f.life / f.max;
+      const a = Math.min(1, f.life / f.max * 2);
+      g.save();
+      g.globalCompositeOperation = "lighter";
+      const grd = g.createLinearGradient(0, 0, 0, H);
+      grd.addColorStop(0, "rgba(255,246,200," + (a * 0.9) + ")");
+      grd.addColorStop(0.7, "rgba(" + (f.color === "#ffe066" ? "255,224,102" : "255,246,200") + "," + (a * 0.55) + ")");
+      grd.addColorStop(1, "rgba(255,240,180,0)");
+      g.fillStyle = grd;
+      const w = f.w * (1 + k * 0.5);
+      g.fillRect(f.x - w / 2, 0, w, H);
+      g.fillStyle = "rgba(255,255,255," + (a * 0.55) + ")";
+      g.fillRect(f.x - w * 0.18, 0, w * 0.36, H);
+      g.restore();
+    }
+
+    drawBlast(g, f) {
+      const k = 1 - f.life / f.max;
+      const r = 12 + k * 190;
+      const a = 1 - k;
+      g.save();
+      g.globalCompositeOperation = "lighter";
+      const grd = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+      grd.addColorStop(0, "rgba(255,255,255," + (a * 0.85) + ")");
+      grd.addColorStop(0.32, "rgba(255,240,160," + (a * 0.6) + ")");
+      grd.addColorStop(0.7, "rgba(255,180,80," + (a * 0.25) + ")");
+      grd.addColorStop(1, "rgba(255,140,40,0)");
+      g.fillStyle = grd;
+      g.beginPath();
+      g.arc(f.x, f.y, r, 0, Math.PI * 2);
+      g.fill();
       g.restore();
     }
 
@@ -893,10 +1113,11 @@
       }
       g.drawImage(spr, Math.round(x - spr.width / 2), Math.round(y - spr.height + 2));
       if (h.hurt > 0) {
-        g.globalAlpha = h.hurt * 0.55;
-        g.globalCompositeOperation = "lighter";
-        g.drawImage(spr, Math.round(x - spr.width / 2), Math.round(y - spr.height + 2));
-        g.globalCompositeOperation = "source-over";
+        const ws = whiteOf("hero", Math.round(h.scale), null);
+        if (ws) {
+          g.globalAlpha = Math.min(1, h.hurt) * 0.7;
+          g.drawImage(ws, Math.round(x - ws.width / 2), Math.round(y - ws.height + 2));
+        }
       }
       g.restore();
 
@@ -930,12 +1151,14 @@
     drawEnemy(g) {
       const e = this.enemy;
       if (!e.key || e.alpha <= 0) return;
-      const spr = G.sprite(e.key, Math.round(e.scale));
+      const spr = G.sprite(e.key, Math.round(e.scale), e.tint || null);
       if (!spr) return;
       const bob = Math.sin(this.t * 2.2 + 1) * (e.boss ? 1.6 : 1.2);
       const sp = e.spawn > 0 ? 1 - e.spawn : 1;
       const hurtOff = e.hurt > 0 ? Math.sin(e.hurt * 26) * 4 : 0;
-      const x = Math.round(e.x + hurtOff);
+      // 넉백: 맞은 방향(플레이어 반대쪽)으로 밀렸다 부드럽게 복귀
+      const knockOff = e.knock > 0 ? Math.sin(Math.min(1, e.knock) * Math.PI) * 26 * (e.knockDir || 1) : 0;
+      const x = Math.round(e.x + hurtOff + knockOff);
       const y = Math.round(e.y + bob);
       if (e.boss) {
         const cy = y - spr.height * 0.5;
@@ -945,20 +1168,46 @@
         g.fillStyle = glow;
         g.fillRect(x - spr.width, cy - spr.height, spr.width * 2, spr.height * 2);
       }
+      if (e.elite) {
+        const cy = y - spr.height * 0.5;
+        const eg = g.createRadialGradient(x, cy, 4, x, cy, spr.width * 0.95);
+        eg.addColorStop(0, "rgba(255,140,60,0.24)");
+        eg.addColorStop(1, "rgba(255,140,60,0)");
+        g.fillStyle = eg;
+        g.fillRect(x - spr.width, cy - spr.height, spr.width * 2, spr.height * 2);
+      }
       g.save();
       g.globalAlpha = e.alpha * Math.min(1, sp * 1.6);
       g.translate(x, y);
       g.scale(1, 0.6 + 0.4 * sp);
       this.drawShadow(g, 0, 0, spr.width * 0.8);
       g.drawImage(spr, Math.round(-spr.width / 2), Math.round(-spr.height + 2));
-      // 피격 시 하얗게
+      // 피격 시 순백색으로 번쩍
       if (e.flash > 0) {
-        g.globalAlpha = Math.min(1, e.flash) * 0.85;
-        g.globalCompositeOperation = "lighter";
-        g.drawImage(spr, Math.round(-spr.width / 2), Math.round(-spr.height + 2));
-        g.globalCompositeOperation = "source-over";
+        const ws = whiteOf(e.key, Math.round(e.scale), e.tint || null);
+        if (ws) {
+          g.globalAlpha = Math.min(1, e.flash) * 0.95;
+          g.drawImage(ws, Math.round(-ws.width / 2), Math.round(-ws.height + 2));
+        }
       }
       g.restore();
+
+      // 보스 방어막
+      if (e.shieldMax > 0 && e.shield > 0) {
+        const cy = y - spr.height * 0.48;
+        const r = spr.width * 0.78;
+        g.save();
+        g.globalAlpha = 0.28 + Math.sin(this.t * 5) * 0.08;
+        g.fillStyle = "#7fd8ff";
+        g.beginPath();
+        g.arc(x, cy, r, 0, Math.PI * 2);
+        g.fill();
+        g.globalAlpha = 0.85;
+        g.strokeStyle = "#bff0ff";
+        g.lineWidth = 2;
+        g.stroke();
+        g.restore();
+      }
 
       if (e.showBar && e.maxHp > 0) {
         const bw = e.boss ? 86 : 58;
@@ -985,21 +1234,25 @@
     }
 
     drawSlash(g, f) {
+      if (f.delay > 0) {
+        f.delay -= 0.016;
+        return;
+      }
       const k = 1 - f.life / f.max;
       g.save();
       g.globalAlpha = Math.min(1, f.life / f.max * 1.6);
       g.strokeStyle = f.color;
-      g.lineWidth = 4 * (1 - k * 0.5);
+      g.lineWidth = 4.4 * (1 - k * 0.5);
       g.beginPath();
       const mx = (f.x1 + f.x2) / 2;
-      const my = (f.y1 + f.y2) / 2 - 24;
+      const my = (f.y1 + f.y2) / 2 - (f.bend == null ? 24 : f.bend);
       const t = Math.min(1, k * 1.8);
       g.moveTo(f.x1, f.y1);
       g.quadraticCurveTo(mx, my, lerp(f.x1, f.x2, t), lerp(f.y1, f.y2, t));
       g.stroke();
-      g.globalAlpha *= 0.5;
+      g.globalAlpha *= 0.6;
       g.strokeStyle = "#fff";
-      g.lineWidth = 1.6;
+      g.lineWidth = 1.8;
       g.stroke();
       g.restore();
     }

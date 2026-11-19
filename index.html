@@ -44,6 +44,14 @@
           </button>
         </header>
 
+        <!-- ================= 상단 미션 바 ================= -->
+        <div class="quest-bar" id="questBar">
+          <span class="qb-ico" id="qbIcon">🗡️</span>
+          <span class="qb-main"><b id="qbText">몬스터 15마리 처치</b><em id="qbProg">0 / 15</em></span>
+          <span class="qb-rw" id="qbReward">보석 5개</span>
+          <button class="qb-claim" id="btnQuest" disabled>진행 중</button>
+        </div>
+
         <!-- ================= 본문 ================= -->
         <main id="views">
           <!-- ---------- 사냥터 ---------- -->
@@ -64,6 +72,8 @@
                 <div class="badge" id="badgeDps">DPS <b>0</b></div>
               </div>
               <div class="stage-clear" id="stageClear"><span>STAGE CLEAR!</span></div>
+              <div class="combo" id="comboField"><b>0</b><span>COMBO</span><em id="comboBonusField">공격 +0%</em></div>
+              <div class="event-tag" id="eventTag"></div>
               <div class="fade-btm"></div>
             </div>
 
@@ -79,6 +89,12 @@
                   <span class="lb">속도</span><span class="vl" id="chipAspd">1.0</span>
                 </div>
               </div>
+              <button class="ult-btn" id="btnUltField" disabled>
+                <i class="ub-fill" id="ultFillField"></i>
+                <span class="ub-ico">✨</span>
+                <span class="ub-mid"><b>성광 폭격</b><small id="ultSubField">게이지 0%</small></span>
+                <span class="ub-tag">궁극기</span>
+              </button>
               <div class="killbar">
                 <span id="killText">처치 0/8</span>
                 <div class="track"><i id="killFill"></i></div>
@@ -93,8 +109,8 @@
           <!-- ---------- 던전 ---------- -->
           <section class="view" id="view-dungeon">
             <div class="dg-hero">
-              <h2>심연의 탑</h2>
-              <p>자동 전투로 층을 밀어도 되고,<br />턴을 직접 골라 보스를 공략해도 됩니다.<br /><b style="color: #ffce54">던전은 희귀·영웅 장비 파밍의 중심지!</b></p>
+              <h2>심연의 탑 · 20층</h2>
+              <p>고블린 소굴 → 해골 묘지 → 용암 동굴 → 얼음 성채 → 심연 마왕성.<br />5개 테마 20층, 층마다 4~6웨이브 + 보스.<br /><b style="color: #ffce54">던전은 희귀·영웅 장비 파밍의 중심지!</b></p>
               <div class="coins">
                 <span class="cur dc"><span class="ico"></span><b id="hudDc2">0</b></span>
               </div>
@@ -105,8 +121,10 @@
                 <div class="card-h"><h3>공략 팁</h3></div>
                 <div style="font-size: 10.5px; color: var(--dim); line-height: 1.65">
                   · <b style="color: #7bffd0">⚡ 자동 전투</b>를 켜면 웨이브부터 보스전까지 알아서 싸웁니다.<br />
-                  · 적의 <b style="color: #ff9a8a">다음 행동</b>을 보고 방어를 고르면 피해를 크게 줄일 수 있어요.<br />
-                  · 웨이브·보스 처치 시 <b style="color: #ffce54">장비가 100% 드랍</b>됩니다(보스는 다수).
+                  · <b style="color: #ffce54">✨ 성광 폭격</b> 게이지가 100%가 되면 금빛 버튼이 켜집니다(자동 전투도 발동).<br />
+                  · 연속 공격으로 <b style="color: #ff8a4a">콤보</b>를 쌓으면 공격력·골드 보너스!<br />
+                  · 적의 <b style="color: #ff9a8a">다음 행동</b>(연속 강타·방어막)을 보고 방어를 고르세요.<br />
+                  · 웨이브·보스 처치 시 <b style="color: #ffce54">장비가 100% 드랍</b>되고, 미믹·정예는 더 많이 드랍합니다.
                 </div>
               </div>
             </div>
@@ -122,6 +140,7 @@
                   </div>
                   <div class="intent" id="intent"></div>
                 </div>
+                <div class="combo" id="comboBattle"><b>0</b><span>COMBO</span><em id="comboBonusBattle">공격 +0%</em></div>
               </div>
               <div class="b-info">
                 <div class="b-name">
@@ -137,6 +156,10 @@
                     <div class="b-bar-lab"><span>적 체력</span><b id="bEhpNum">90/90</b></div>
                     <div class="bar enemy thin" id="bEhpBar"><i id="bEhFill"></i></div>
                   </div>
+                </div>
+                <div class="b-shield" id="bShield">
+                  <div class="bs-fill"><i id="bShieldFill"></i></div>
+                  <span id="bShieldTxt">🛡 방어막 0</span>
                 </div>
               </div>
               <div class="loot-strip" id="bLoot"></div>
@@ -165,6 +188,11 @@
                 <button class="act wide" id="actPotion">
                   <span class="em">🧪</span>
                   <span class="at"><b>포션 사용</b><small>체력 45% 회복 · 남은 포션 <span id="potCount">3</span>개</small></span>
+                </button>
+                <button class="act ult wide" id="btnUlt" disabled>
+                  <i class="ub-fill" id="ultFill"></i>
+                  <span class="em">✨</span>
+                  <span class="at"><b>성광 폭격</b><small id="ultSub">게이지 0% · 공격·피격으로 충전</small></span>
                 </button>
               </div>
             </div>
