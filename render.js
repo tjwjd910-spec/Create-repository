@@ -576,6 +576,8 @@
       this.slowmo = 0;
       this.fx = [];
       this.amb = [];
+      this.heroKey = "hero";
+      this.auraColor = "255,226,120";
       this.hero = {
         x: 0,
         y: 0,
@@ -587,6 +589,8 @@
         dead: 0,
         alpha: 1,
       };
+      // 동행 펫 — 공주 옆을 따라다니며 함께 공격한다
+      this.pet = { key: null, scale: 2.3, x: 0, y: 0, atk: 0, alpha: 1 };
       this.enemy = {
         key: "slime",
         name: "",
@@ -648,6 +652,18 @@
       this.enemy.x = enX;
       this.enemy.y = gy;
       this.groundY = gy;
+      this.pet.x = Math.max(20, heroX - Math.round(W * 0.115));
+      this.pet.y = gy + 1;
+    }
+
+    setHero(key, auraColor) {
+      this.heroKey = key || "hero";
+      if (auraColor) this.auraColor = auraColor;
+    }
+
+    setPet(key, scale) {
+      this.pet.key = key || null;
+      if (scale) this.pet.scale = scale;
     }
 
     setTheme(key, seed) {
@@ -767,8 +783,12 @@
         });
       }
     }
-    // 궁극기 [성광 폭격] — 빛의 기둥 + 폭발
-    ultFx(x, y) {
+    // 궁극기 — 직업별 연출 (holy / meteor / sakura / doom)
+    ultFx(x, y, style) {
+      style = style || "holy";
+      if (style === "meteor") return this.ultMeteor(x, y);
+      if (style === "sakura") return this.ultSakura(x, y);
+      if (style === "doom") return this.ultDoom(x, y);
       this.screenFlash("255,240,190", 0.85);
       this.shakeAdd(26);
       this.hitStop(0.085);
@@ -789,6 +809,142 @@
       this.burst(x, y, "#ffd479", 26, 220);
       this.critBurst(x, y - 10, "#fff2b0");
     }
+    /* ☄️ 메테오 스트라이크 : 하늘에서 운석이 쏟아진다 */
+    ultMeteor(x, y) {
+      this.screenFlash("255,170,110", 0.8);
+      this.shakeAdd(28);
+      this.hitStop(0.09);
+      for (let i = 0; i < 5; i++) {
+        this.fx.push({
+          type: "meteor",
+          x: x + (i - 2) * 34,
+          y: y,
+          ty: y + 34 + (i % 3) * 8,
+          life: 0.62 + i * 0.06,
+          max: 0.62 + i * 0.06,
+          delay: i * 0.07,
+          color: i % 2 ? "#ffb347" : "#ff6b2b",
+        });
+      }
+      this.fx.push({ type: "blast", x: x, y: y, life: 0.8, max: 0.8, color: "#ffd08a" });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.8, max: 0.8, color: "#ff8a3d", w: 6 });
+      this.embers(x, y, 34, 210);
+      this.burst(x, y, "#ffb347", 26, 230);
+      this.critBurst(x, y - 6, "#ffe9a8");
+    }
+
+    /* 🌸 천본앵 · 난무 : 꽃잎이 흩날리며 난도질 */
+    ultSakura(x, y) {
+      this.screenFlash("255,200,230", 0.5);
+      this.shakeAdd(20);
+      this.hitStop(0.07);
+      for (let i = 0; i < 34; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 30 + Math.random() * 130;
+        this.fx.push({
+          type: "petal",
+          x: x + (Math.random() - 0.5) * 60,
+          y: y + (Math.random() - 0.5) * 60,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 40,
+          life: 0.5 + Math.random() * 0.6,
+          max: 1.1,
+          color: Math.random() < 0.5 ? "#ffb3d9" : "#ff8ec4",
+          spin: Math.random() * 6,
+        });
+      }
+      for (let i = 0; i < 7; i++) {
+        this.fx.push({
+          type: "slash",
+          x1: x - 46 + i * 14,
+          y1: y - 30 + (i % 2 ? 24 : -8),
+          x2: x + 46 - i * 10,
+          y2: y + 18 - (i % 3) * 22,
+          life: 0.3 + i * 0.05,
+          max: 0.3 + i * 0.05,
+          color: i % 2 ? "#ffe0f0" : "#ff8ec4",
+          bend: 30,
+          delay: i * 0.045,
+        });
+      }
+      this.fx.push({ type: "blast", x: x, y: y, life: 0.66, max: 0.66, color: "#ffd0e8" });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.75, max: 0.75, color: "#ff8ec4", w: 5 });
+      this.burst(x, y, "#ffb3d9", 22, 190);
+    }
+
+    /* 💥 파멸의 일격 : 핏빛 충격파 */
+    ultDoom(x, y) {
+      this.screenFlash("255,70,60", 0.85);
+      this.shakeAdd(32);
+      this.hitStop(0.1);
+      this.fx.push({ type: "blast", x: x, y: y, life: 0.8, max: 0.8, color: "#ff6a4a" });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.55, max: 0.55, color: "#ff2a2a", w: 7 });
+      this.fx.push({ type: "ring", x: x, y: y, life: 0.9, max: 0.9, color: "#ffb03a", w: 4 });
+      for (let i = 0; i < 3; i++) {
+        this.fx.push({
+          type: "slash",
+          x1: x - 40,
+          y1: y - 40 + i * 18,
+          x2: x + 40,
+          y2: y + 24 - i * 16,
+          life: 0.34,
+          max: 0.34,
+          color: "#ff5a4a",
+          bend: 26,
+          delay: i * 0.06,
+        });
+      }
+      this.embers(x, y, 28, 190);
+      this.burst(x, y, "#ff3a2a", 24, 210);
+      this.critBurst(x, y - 8, "#ffb03a");
+    }
+
+    drawProj(g, f) {
+      const k = 1 - f.life / f.max;
+      const x = lerp(f.x, f.tx, k);
+      const y = lerp(f.y, f.ty, k) - Math.sin(k * Math.PI) * 26;
+      g.save();
+      g.globalCompositeOperation = "lighter";
+      const r = 5 + Math.sin(k * Math.PI) * 5;
+      const grd = g.createRadialGradient(x, y, 0, x, y, r * 2.4);
+      grd.addColorStop(0, "rgba(255,255,255,0.95)");
+      grd.addColorStop(0.35, f.color);
+      grd.addColorStop(1, "rgba(255,220,140,0)");
+      g.fillStyle = grd;
+      g.beginPath();
+      g.arc(x, y, r * 2.2, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+
+    drawMeteor(g, f) {
+      if (f.delay > 0) {
+        f.delay -= 0.016;
+        return;
+      }
+      const k = 1 - f.life / f.max;
+      const ease = Math.pow(k, 1.6);
+      const x = lerp(f.x + 60, f.x - 10, ease);
+      const y = lerp(-40, f.ty, ease);
+      g.save();
+      g.globalCompositeOperation = "lighter";
+      const grd = g.createLinearGradient(x + 40, y - 90, x, y);
+      grd.addColorStop(0, "rgba(255,180,90,0)");
+      grd.addColorStop(1, f.color);
+      g.strokeStyle = grd;
+      g.lineWidth = 8 * (1 - k * 0.5);
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(x + 46, y - 96);
+      g.lineTo(x, y);
+      g.stroke();
+      g.fillStyle = "rgba(255,240,190," + (0.85 - k * 0.3) + ")";
+      g.beginPath();
+      g.arc(x, y, 7 - k * 3, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+
     text(x, y, txt, color, size, life) {
       this.fx.push({
         type: "text",
@@ -845,6 +1001,51 @@
       this.guard = on ? 1 : 0;
     }
 
+    /* ---------------- 펫 추가 공격 (투사체) ---------------- */
+    petStrike(tx, ty, color) {
+      if (!this.pet.key) return;
+      this.pet.atk = 1;
+      this.fx.push({
+        type: "proj",
+        x: this.pet.x,
+        y: this.pet.y - 30,
+        tx: tx,
+        ty: ty,
+        life: 0.36,
+        max: 0.36,
+        color: color || "#ffd479",
+      });
+    }
+
+    drawPet(g) {
+      const p = this.pet;
+      if (!p.key || p.alpha <= 0) return;
+      const spr = G.sprite(p.key, Math.max(1, Math.round(p.scale)), null);
+      if (!spr) return;
+      const follow = Math.sin(this.t * 1.7) * 3.2;
+      const jump = p.atk > 0 ? Math.sin((1 - p.atk) * Math.PI) : 0;
+      const x = Math.round(p.x + follow + jump * 22);
+      const y = Math.round(p.y + Math.sin(this.t * 3.3 + 1.4) * 2.2 - jump * 12);
+      this.drawShadow(g, x, y - 1, spr.width * 0.62);
+      g.save();
+      g.globalAlpha = p.alpha * 0.28;
+      const glow = g.createRadialGradient(x, y - spr.height * 0.5, 2, x, y - spr.height * 0.5, spr.width * 0.9);
+      glow.addColorStop(0, "rgba(255,240,190,0.55)");
+      glow.addColorStop(1, "rgba(255,240,190,0)");
+      g.fillStyle = glow;
+      g.fillRect(x - spr.width, y - spr.height * 1.5, spr.width * 2, spr.height * 2);
+      g.globalAlpha = p.alpha;
+      g.drawImage(spr, Math.round(x - spr.width / 2), Math.round(y - spr.height + 2));
+      g.restore();
+      // 펫 반짝임
+      if (Math.sin(this.t * 3.1) > 0.6) {
+        g.save();
+        g.globalCompositeOperation = "lighter";
+        this.sparkle(g, x + spr.width * 0.34, y - spr.height * 0.8, 1.6, 0.7);
+        g.restore();
+      }
+    }
+
     /* ---- update ---- */
     update(dt) {
       // 히트스톱: 이 프레임 동안 연출을 얼려 타격 순간을 강조
@@ -854,6 +1055,7 @@
       }
       this.t += dt;
       this.hero.bob = Math.sin(this.t * 3.4) * 1.2;
+      if (this.pet.atk > 0) this.pet.atk = Math.max(0, this.pet.atk - dt * 3.2);
       if (this.hero.lunge > 0) this.hero.lunge = Math.max(0, this.hero.lunge - dt * 4.2);
       if (this.hero.hurt > 0) this.hero.hurt = Math.max(0, this.hero.hurt - dt * 3);
       if (this.enemy.flash > 0) this.enemy.flash = Math.max(0, this.enemy.flash - dt * 5);
@@ -898,6 +1100,13 @@
           f.vx *= 1 - dt * 2.4;
         } else if (f.type === "coin") {
           if (f.delay > 0) f.delay -= dt;
+        } else if (f.type === "petal") {
+          f.x += f.vx * dt;
+          f.y += f.vy * dt;
+          f.vy += 26 * dt;
+          f.spin += dt * 6;
+        } else if (f.type === "meteor") {
+          if (f.delay > 0) f.delay -= dt;
         }
         if (f.life <= 0) this.fx.splice(i, 1);
       }
@@ -924,6 +1133,7 @@
         if (f.type === "beam") this.drawBeam(g, f);
       }
       this.drawEnemy(g);
+      this.drawPet(g);
       this.drawHero(g);
 
       // 이펙트 (스프라이트 위)
@@ -932,6 +1142,18 @@
       }
       for (const f of this.fx) {
         if (f.type === "slash") this.drawSlash(g, f);
+      }
+      for (const f of this.fx) {
+        if (f.type === "proj") this.drawProj(g, f);
+        if (f.type === "meteor") this.drawMeteor(g, f);
+        if (f.type === "petal") {
+          g.save();
+          g.globalAlpha = Math.max(0, f.life / f.max);
+          g.translate(f.x, f.y);
+          g.rotate(f.spin);
+          px(g, -2, -1, 4, 2.4, f.color);
+          g.restore();
+        }
       }
       for (const f of this.fx) {
         if (f.type === "blast") this.drawBlast(g, f);
@@ -1088,7 +1310,7 @@
     drawHero(g) {
       const h = this.hero;
       if (h.alpha <= 0) return;
-      const spr = G.sprite("hero", Math.round(h.scale));
+      const spr = G.sprite(this.heroKey, Math.round(h.scale));
       if (!spr) return;
       const lunge = Math.sin((1 - h.lunge) * Math.PI) * (h.lunge > 0 ? 26 : 0);
       const x = Math.round(h.x + lunge + (h.hurt > 0 ? -Math.sin(h.hurt * 22) * 3 : 0));
@@ -1098,9 +1320,9 @@
       // 빛의 공주 오라
       const cy = y - spr.height * 0.52;
       const aura = g.createRadialGradient(x, cy, 3, x, cy, spr.width * 0.95);
-      aura.addColorStop(0, "rgba(255,226,120,0.20)");
-      aura.addColorStop(0.55, "rgba(255,214,90,0.07)");
-      aura.addColorStop(1, "rgba(255,214,90,0)");
+      aura.addColorStop(0, "rgba(" + this.auraColor + ",0.20)");
+      aura.addColorStop(0.55, "rgba(" + this.auraColor + ",0.07)");
+      aura.addColorStop(1, "rgba(" + this.auraColor + ",0)");
       g.fillStyle = aura;
       g.fillRect(x - spr.width, cy - spr.height, spr.width * 2, spr.height * 2);
 
@@ -1113,7 +1335,7 @@
       }
       g.drawImage(spr, Math.round(x - spr.width / 2), Math.round(y - spr.height + 2));
       if (h.hurt > 0) {
-        const ws = whiteOf("hero", Math.round(h.scale), null);
+        const ws = whiteOf(this.heroKey, Math.round(h.scale), null);
         if (ws) {
           g.globalAlpha = Math.min(1, h.hurt) * 0.7;
           g.drawImage(ws, Math.round(x - ws.width / 2), Math.round(y - ws.height + 2));

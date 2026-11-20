@@ -92,7 +92,7 @@
               <button class="ult-btn" id="btnUltField" disabled>
                 <i class="ub-fill" id="ultFillField"></i>
                 <span class="ub-ico">✨</span>
-                <span class="ub-mid"><b>성광 폭격</b><small id="ultSubField">게이지 0%</small></span>
+                <span class="ub-mid"><b id="ultNameField">성광 폭격</b><small id="ultSubField">게이지 0%</small></span>
                 <span class="ub-tag">궁극기</span>
               </button>
               <div class="killbar">
@@ -116,12 +116,23 @@
               </div>
             </div>
             <div class="pad">
+              <div class="rush-card" id="rushCard">
+                <div class="rc-l">
+                  <span class="rc-ico">♾️</span>
+                  <div>
+                    <div class="rc-name">무한의 시련</div>
+                    <div class="rc-sub">20층 너머 끝없는 보스 행렬에 도전하세요</div>
+                  </div>
+                </div>
+                <div class="rc-best"><b>0</b><small>최고</small></div>
+                <button class="btn gold sm rc-go">도전</button>
+              </div>
               <div class="floor-list" id="floorList"></div>
               <div class="card" id="dgTip">
                 <div class="card-h"><h3>공략 팁</h3></div>
                 <div style="font-size: 10.5px; color: var(--dim); line-height: 1.65">
                   · <b style="color: #7bffd0">⚡ 자동 전투</b>를 켜면 웨이브부터 보스전까지 알아서 싸웁니다.<br />
-                  · <b style="color: #ffce54">✨ 성광 폭격</b> 게이지가 100%가 되면 금빛 버튼이 켜집니다(자동 전투도 발동).<br />
+                  · <b style="color: #ffce54">✨ 궁극기</b> 게이지가 100%가 되면 금빛 버튼이 켜집니다(자동 전투도 발동).<br />
                   · 연속 공격으로 <b style="color: #ff8a4a">콤보</b>를 쌓으면 공격력·골드 보너스!<br />
                   · 적의 <b style="color: #ff9a8a">다음 행동</b>(연속 강타·방어막)을 보고 방어를 고르세요.<br />
                   · 웨이브·보스 처치 시 <b style="color: #ffce54">장비가 100% 드랍</b>되고, 미믹·정예는 더 많이 드랍합니다.
@@ -170,15 +181,15 @@
                   <span class="at"><b>기본 공격</b><small>공격력 100%</small></span>
                   <span class="cd" id="cdAttack"></span>
                 </button>
-                <button class="act skill1" id="actSmash">
-                  <span class="em">💥</span>
-                  <span class="at"><b>강타</b><small>공격력 210%</small></span>
-                  <span class="cd" id="cdSmash"></span>
+                <button class="act skill1" id="actSkill1">
+                  <span class="em">✨</span>
+                  <span class="at"><b>신성 베기</b><small>220% · 신성</small></span>
+                  <span class="cd" id="cdS1"></span>
                 </button>
-                <button class="act skill2" id="actFlame">
-                  <span class="em">🔥</span>
-                  <span class="at"><b>화염베기</b><small>150% + 화상</small></span>
-                  <span class="cd" id="cdFlame"></span>
+                <button class="act skill2" id="actSkill2">
+                  <span class="em">🛡️</span>
+                  <span class="at"><b>성역 수호</b><small>회복 + 방어</small></span>
+                  <span class="cd" id="cdS2"></span>
                 </button>
                 <button class="act guard" id="actGuard">
                   <span class="em">🛡️</span>
@@ -192,7 +203,7 @@
                 <button class="act ult wide" id="btnUlt" disabled>
                   <i class="ub-fill" id="ultFill"></i>
                   <span class="em">✨</span>
-                  <span class="at"><b>성광 폭격</b><small id="ultSub">게이지 0% · 공격·피격으로 충전</small></span>
+                  <span class="at"><b id="ultName">성광 폭격</b><small id="ultSub">게이지 0% · 공격·피격으로 충전</small></span>
                 </button>
               </div>
             </div>
@@ -216,6 +227,20 @@
               </div>
             </div>
             <div class="pad">
+              <div class="card job-card" id="jobCard">
+                <div class="card-h">
+                  <h3>직업 · 전직</h3>
+                  <button class="btn sm ghost" id="btnChangeJob">전직 (무료)</button>
+                </div>
+                <div class="job-line">
+                  <span class="job-ic" id="jobIcon">⚔️</span>
+                  <div class="job-info">
+                    <div class="job-nm" id="jobName">성기사 공주</div>
+                    <div class="job-tags" id="jobTags"></div>
+                  </div>
+                </div>
+                <div class="js-list" id="jobSkills"></div>
+              </div>
               <div class="card">
                 <div class="card-h">
                   <h3>전투 능력치</h3>
@@ -233,6 +258,15 @@
               <div class="card">
                 <div class="card-h"><h3>장비 강화</h3><span class="sub" id="stoneLabel">강화석 0</span></div>
                 <div id="enhList" style="display: flex; flex-direction: column; gap: 6px"></div>
+              </div>
+              <div class="card codex-card">
+                <div class="card-h">
+                  <h3>도감 수집 보너스</h3>
+                  <span class="sub" id="codexBonus">장비 0/15 · 펫 0/12</span>
+                </div>
+                <div class="codex-eq" id="codexEq"></div>
+                <div class="codex-pets" id="codexPets"></div>
+                <div class="codex-sum" id="codexSum"></div>
               </div>
             </div>
           </section>
@@ -262,7 +296,7 @@
                 <div class="bag-legend">
                   <span class="df up">▲ 상승</span>
                   <span class="df down">▼ 하락</span>
-                  <span class="lg-t">착용 장비 대비</span>
+                  <span class="lg-t">기본 스탯 비교 · 강화 +N 제외</span>
                 </div>
                 <div id="invList"></div>
               </div>
@@ -280,6 +314,47 @@
                     <code style="font-family: var(--mono); color: #9b8bff">Ads.show('reward_chest')</code>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
+          <!-- ---------- 펫 · 상자깡 ---------- -->
+          <section class="view" id="view-pet">
+            <div class="pad">
+              <div class="card pet-hero-card">
+                <div class="card-h">
+                  <h3>동행 펫</h3>
+                  <span class="sub" id="petShardLabel">펫 조각 0</span>
+                </div>
+                <div class="pet-equip" id="petEquipBox"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <h3>상자깡 · 펫 소환</h3>
+                  <span class="sub">중복 획득은 승급 ★</span>
+                </div>
+                <div class="gacha-row" id="gachaRow"></div>
+                <button class="btn-ad" id="btnGachaAd">
+                  <span class="ad-ico">AD</span> 광고 보고 황금 상자 1회 열기
+                </button>
+                <div class="gacha-note">10연차 10% 할인 · 황금 상자 희귀+ · 전설 상자 희귀~전설</div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <h3>조각 합성</h3>
+                  <span class="sub" id="shardLabel">조각 0</span>
+                </div>
+                <div class="shard-row" id="shardRow"></div>
+                <div class="gacha-note">중복 펫이 조각으로 바뀝니다 · 원하는 등급의 펫을 확정 소환</div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <h3>보유 펫 · 승급</h3>
+                  <span class="sub" id="petCount">0 / 12</span>
+                </div>
+                <div class="pet-grid" id="petGrid"></div>
               </div>
             </div>
           </section>
@@ -304,6 +379,16 @@
             </span>
             던전
             <span class="dot show" id="dotDungeon"></span>
+          </button>
+          <button class="tab" data-tab="pet">
+            <span class="ti">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 10.5a2.5 2.5 0 1 1 3.6-3.4M17 10.5a2.5 2.5 0 1 0-3.6-3.4" />
+                <path d="M5 15.5c0-3.3 3.1-6 7-6s7 2.7 7 6c0 2.5-1.8 4-4 4-.9 0-1.6-.3-2-.6-.5.3-1.2.6-2 .6-2.2 0-4-1.5-4-4z" />
+              </svg>
+            </span>
+            펫·상자
+            <span class="dot" id="dotPet"></span>
           </button>
           <button class="tab" data-tab="grow">
             <span class="ti">
@@ -412,11 +497,42 @@
             <div class="profile-av"><canvas id="profileCv" width="96" height="96"></canvas></div>
             <div class="profile-name" id="profileName">공주 서쟈</div>
             <div class="profile-meta" id="profileMeta">Lv.1 · 스테이지 1</div>
+            <button class="profile-row" id="btnProfileJob"><span>⚔️</span>직업 변경 (무료 전직)<i>›</i></button>
             <button class="profile-row" id="btnRename"><span>✏️</span>닉네임 변경<i>›</i></button>
             <button class="profile-row" id="btnReplayStory"><span>📖</span>스토리 다시 보기<i>›</i></button>
             <button class="profile-row" id="btnPlayOpening"><span>🎬</span>오프닝부터 다시 보기<i>›</i></button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ================= 직업 선택 ================= -->
+    <div class="jobpick" id="jobpick">
+      <div class="jp-inner">
+        <div class="jp-head">
+          <div class="jp-crest">✦</div>
+          <h2 id="jpTitle">공주님의 길을 선택하세요</h2>
+          <p class="jp-sub" id="jpSub">직업마다 전용 스킬 · 궁극기 · 기본 스탯이 다릅니다.<br />언제든 <b>무료로 전직</b>할 수 있어요.</p>
+        </div>
+        <div class="jp-list" id="jpList"></div>
+        <div class="jp-foot">
+          <button class="boot-btn" id="btnJobOk" disabled>이 직업으로 시작</button>
+          <button class="boot-btn ghost sm" id="btnJobCancel" hidden>취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 상자깡 연출 ================= -->
+    <div class="gacha" id="gacha">
+      <div class="gacha-box">
+        <div class="g-stage" id="gStage">
+          <div class="g-rays" id="gRays"></div>
+          <div class="g-chest" id="gChest">🎁</div>
+          <div class="g-burst" id="gBurst"></div>
+          <div class="g-title" id="gTitle"></div>
+        </div>
+        <div class="g-result" id="gResult"></div>
+        <button class="btn gold block" id="btnGachaDone" hidden>확인</button>
       </div>
     </div>
 
@@ -427,6 +543,8 @@
     <script src="render.js"></script>
     <script src="audio.js"></script>
     <script src="ui.js"></script>
+    <script src="pets.js"></script>
+    <script src="jobpick.js"></script>
     <script src="intro.js"></script>
   </body>
 </html>

@@ -1240,7 +1240,7 @@
       const g = cvp.getContext("2d");
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, cvp.width, cvp.height);
-      const spr = G.sprite("hero", 5);
+      const spr = G.jobSprite(st.job || "paladin", 5);
       if (spr) {
         const sh = Math.round(spr.height * 0.63);
         const sw = Math.round(spr.width * 0.84);
@@ -1358,6 +1358,13 @@
     el.profile.addEventListener("click", (e) => {
       if (e.target === el.profile) closeProfile();
     });
+    const jobRow = document.querySelector("#btnProfileJob");
+    if (jobRow) {
+      jobRow.addEventListener("click", () => {
+        closeProfile();
+        if (G.JobPick) G.JobPick.open({ mode: "change" });
+      });
+    }
     el.rename.addEventListener("click", () => {
       closeProfile();
       openName("change");

@@ -545,6 +545,109 @@
       toneHz(440, start, 0.07, { wave: "square", gain: 0.06, bus: A.sfxBus });
       toneHz(330, start + 0.06, 0.09, { wave: "square", gain: 0.05, bus: A.sfxBus });
     },
+
+    /* ---------------- 직업 스킬 ---------------- */
+    holy(start) {
+      [659, 880, 1319].forEach((f, i) => toneHz(f, start + i * 0.03, 0.5, { wave: "triangle", gain: 0.09, bus: A.sfxBus }));
+      noise(start, 0.3, { filter: "highpass", hz: 2600, hzTo: 7000, gain: 0.08 });
+      toneHz(110, start, 0.3, { wave: "sawtooth", gain: 0.09, slideTo: 55, bus: A.sfxBus, filter: "lowpass", cut: 1200 });
+      noise(start, 0.34, { filter: "bandpass", hz: 900, hzTo: 1800, q: 1.2, gain: 0.12 });
+    },
+    sanctuary(start) {
+      [523, 659, 784, 1047].forEach((f, i) => toneHz(f, start + i * 0.05, 0.6, { wave: "sine", gain: 0.09, bus: A.sfxBus }));
+      noise(start, 0.5, { filter: "highpass", hz: 3000, hzTo: 6000, gain: 0.05 });
+      toneHz(392, start + 0.1, 0.7, { wave: "triangle", gain: 0.05, bus: A.sfxBus });
+    },
+    frost(start) {
+      noise(start, 0.42, { filter: "highpass", hz: 3800, hzTo: 9000, gain: 0.12 });
+      [1568, 2093, 2637].forEach((f, i) => toneHz(f, start + i * 0.04, 0.35, { wave: "triangle", gain: 0.045, slideTo: f * 0.7, bus: A.sfxBus }));
+      toneHz(120, start, 0.3, { wave: "sine", gain: 0.16, slideTo: 60, bus: A.sfxBus });
+    },
+    stab(start) {
+      noise(start, 0.09, { filter: "bandpass", hz: 3600, hzTo: 1800, q: 1.4, gain: 0.16 });
+      toneHz(1400, start, 0.06, { wave: "square", gain: 0.06, bus: A.sfxBus });
+      toneHz(90, start, 0.1, { wave: "sine", gain: 0.2, slideTo: 50, bus: A.sfxBus });
+    },
+    shadow(start) {
+      noise(start, 0.3, { filter: "bandpass", hz: 400, hzTo: 1600, q: 0.6, gain: 0.12 });
+      toneHz(220, start, 0.28, { wave: "sawtooth", gain: 0.07, slideTo: 110, bus: A.sfxBus, filter: "lowpass", cut: 1200 });
+      toneHz(880, start + 0.1, 0.16, { wave: "triangle", gain: 0.05, bus: A.sfxBus });
+    },
+    rage(start) {
+      noise(start, 0.3, { filter: "lowpass", hz: 1500, hzTo: 300, gain: 0.2 });
+      toneHz(90, start, 0.26, { wave: "sawtooth", gain: 0.16, slideTo: 50, bus: A.sfxBus, filter: "lowpass", cut: 800 });
+      toneHz(60, start, 0.3, { wave: "sine", gain: 0.3, slideTo: 32, bus: A.sfxBus });
+    },
+    blood(start) {
+      toneHz(180, start, 0.4, { wave: "sawtooth", gain: 0.07, slideTo: 330, bus: A.sfxBus, filter: "lowpass", cut: 900 });
+      [440, 554, 659].forEach((f, i) => toneHz(f, start + 0.12 + i * 0.05, 0.4, { wave: "triangle", gain: 0.06, bus: A.sfxBus }));
+      noise(start, 0.35, { filter: "lowpass", hz: 800, hzTo: 200, gain: 0.14 });
+    },
+    sakura(start) {
+      for (let i = 0; i < 7; i++) toneHz(1200 + i * 220, start + i * 0.03, 0.18, { wave: "triangle", gain: 0.04, bus: A.sfxBus });
+      noise(start, 0.4, { filter: "highpass", hz: 3000, hzTo: 8000, gain: 0.1 });
+      toneHz(70, start + 0.1, 0.4, { wave: "sine", gain: 0.24, slideTo: 36, bus: A.sfxBus });
+      [1047, 1319, 1568].forEach((f, i) => toneHz(f, start + 0.12 + i * 0.04, 0.5, { wave: "sine", gain: 0.05, bus: A.sfxBus }));
+    },
+    meteor(start) {
+      toneHz(1800, start, 0.45, { wave: "sine", gain: 0.07, slideTo: 180, bus: A.sfxBus });
+      noise(start + 0.3, 0.7, { filter: "lowpass", hz: 1800, hzTo: 90, gain: 0.3 });
+      toneHz(46, start + 0.32, 0.8, { wave: "sine", gain: 0.42, slideTo: 22, bus: A.sfxBus });
+      noise(start + 0.3, 0.6, { filter: "highpass", hz: 1200, hzTo: 7000, gain: 0.1 });
+    },
+    doom(start) {
+      toneHz(150, start, 0.3, { wave: "sawtooth", gain: 0.14, slideTo: 60, bus: A.sfxBus, filter: "lowpass", cut: 900 });
+      toneHz(40, start + 0.16, 0.8, { wave: "sine", gain: 0.4, slideTo: 20, bus: A.sfxBus });
+      noise(start + 0.14, 0.7, { filter: "lowpass", hz: 1400, hzTo: 80, gain: 0.26 });
+      [180, 240, 300].forEach((f, i) => toneHz(f, start + 0.18 + i * 0.03, 0.5, { wave: "square", gain: 0.05, bus: A.sfxBus }));
+    },
+
+    /* ---------------- 펫 ---------------- */
+    petHit(start) {
+      toneHz(880, start, 0.06, { wave: "triangle", gain: 0.05, bus: A.sfxBus });
+      toneHz(1320, start + 0.03, 0.07, { wave: "triangle", gain: 0.04, bus: A.sfxBus });
+      noise(start, 0.07, { filter: "bandpass", hz: 2400, hzTo: 1200, gain: 0.07 });
+    },
+    petSkill(start) {
+      [784, 1047, 1568].forEach((f, i) => toneHz(f, start + i * 0.05, 0.22, { wave: "triangle", gain: 0.06, bus: A.sfxBus }));
+    },
+
+    /* ---------------- 상자깡 ---------------- */
+    chestShake(start) {
+      for (let i = 0; i < 6; i++) noise(start + i * 0.09, 0.05, { filter: "bandpass", hz: 700 + i * 60, q: 1.6, gain: 0.1 });
+      toneHz(120, start, 0.5, { wave: "square", gain: 0.04, bus: A.sfxBus, slideTo: 200 });
+    },
+    chestOpen(start) {
+      noise(start, 0.4, { filter: "highpass", hz: 2200, hzTo: 8000, gain: 0.12 });
+      [523, 659, 784].forEach((f, i) => toneHz(f, start + i * 0.05, 0.4, { wave: "triangle", gain: 0.08, bus: A.sfxBus }));
+      toneHz(70, start, 0.3, { wave: "sine", gain: 0.26, slideTo: 38, bus: A.sfxBus });
+    },
+    gachaRare(start) {
+      [659, 784, 988, 1319].forEach((f, i) => toneHz(f, start + i * 0.06, 0.3, { wave: "square", gain: 0.06, bus: A.sfxBus }));
+      noise(start, 0.3, { filter: "highpass", hz: 4000, gain: 0.05 });
+    },
+    gachaLegend(start) {
+      [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => toneHz(f, start + i * 0.07, 0.5, { wave: "triangle", gain: 0.08, bus: A.sfxBus }));
+      toneHz(50, start, 0.7, { wave: "sine", gain: 0.3, slideTo: 28, bus: A.sfxBus });
+      noise(start + 0.1, 0.7, { filter: "highpass", hz: 2600, hzTo: 8000, gain: 0.08 });
+    },
+
+    /* ---------------- 전직 · 제련 · 시련 · 도감 ---------------- */
+    jobChange(start) {
+      [392, 523, 659, 784, 1047].forEach((f, i) => toneHz(f, start + i * 0.08, 0.45, { wave: "sawtooth", gain: 0.06, bus: A.sfxBus, filter: "lowpass", cut: 2400 }));
+      noise(start, 0.4, { filter: "bandpass", hz: 900, hzTo: 3000, gain: 0.08 });
+    },
+    refine(start) {
+      noise(start, 0.2, { filter: "bandpass", hz: 1600, hzTo: 600, q: 1.2, gain: 0.12 });
+      [660, 990, 1320].forEach((f, i) => toneHz(f, start + 0.06 + i * 0.05, 0.2, { wave: "square", gain: 0.05, bus: A.sfxBus }));
+    },
+    rush(start) {
+      toneHz(98, start, 0.5, { wave: "sawtooth", gain: 0.14, slideTo: 147, bus: A.sfxBus, filter: "lowpass", cut: 900 });
+      [147, 196, 294].forEach((f, i) => toneHz(f, start + 0.2 + i * 0.08, 0.35, { wave: "square", gain: 0.06, bus: A.sfxBus }));
+    },
+    codex(start) {
+      [880, 1175, 1568].forEach((f, i) => toneHz(f, start + i * 0.06, 0.35, { wave: "sine", gain: 0.06, bus: A.sfxBus }));
+    },
   };
 
   A.sfx = function (name) {

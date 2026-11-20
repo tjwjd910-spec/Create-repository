@@ -363,7 +363,7 @@ main {
   flex: 0 0 auto;
   height: var(--nav-h);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: linear-gradient(180deg, #161226 0%, #0d0b16 100%);
   border-top: 2px solid #2b2545;
   padding-bottom: max(0px, env(safe-area-inset-bottom));
@@ -375,7 +375,7 @@ main {
   background: none;
   color: var(--dim-2);
   font-family: var(--font);
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 700;
   display: flex;
   flex-direction: column;
@@ -3335,4 +3335,991 @@ main {
 }
 .profile-row:active {
   background: rgba(255, 255, 255, 0.09);
+}
+
+/* ==========================================================================
+   v4 — 직업 · 펫 · 상자깡 · 도감 · 무한의 시련
+   ========================================================================== */
+
+/* ---------- 공용 아이템 보조 표기 ---------- */
+.enhb {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: #ffd479;
+  background: rgba(245, 196, 81, 0.12);
+  border: 1px solid rgba(245, 196, 81, 0.35);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 3px;
+  vertical-align: 1px;
+}
+.eq-slot .sl-enh {
+  font-size: 8px;
+  color: var(--dim-2);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+/* ---------- 아이템 상세 : 잠재옵션 / 기본 스탯 비교 ---------- */
+.pot-box {
+  border: 1px solid #3a3158;
+  background: linear-gradient(180deg, #211c38, #1a1629);
+  border-radius: 9px;
+  padding: 7px 9px;
+  margin: 8px 0 9px;
+}
+.pot-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  font-weight: 800;
+  color: #b9a4ff;
+  margin-bottom: 4px;
+}
+.pot-h span {
+  font-size: 9px;
+  color: var(--dim-2);
+  font-weight: 700;
+}
+.pot-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  padding: 2px 0;
+  color: var(--text);
+}
+.pot-row b {
+  color: #a8e07a;
+  font-family: var(--mono);
+}
+.pot-none {
+  font-size: 10px;
+  color: var(--dim-2);
+  line-height: 1.5;
+}
+.pot-cost {
+  font-size: 9px;
+  color: var(--dim-2);
+  margin-top: 5px;
+  border-top: 1px dashed #332c52;
+  padding-top: 4px;
+}
+.base-h {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #cfe8ff;
+  margin: 6px 0 4px;
+}
+.base-h span {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--dim-2);
+}
+.enh-note {
+  font-size: 9.5px;
+  color: #ffd479;
+  background: rgba(245, 196, 81, 0.08);
+  border-left: 2px solid rgba(245, 196, 81, 0.5);
+  padding: 4px 7px;
+  border-radius: 0 5px 5px 0;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+.enh-note.cur {
+  color: #9fb4d8;
+  border-left-color: rgba(140, 180, 230, 0.5);
+  background: rgba(140, 180, 230, 0.07);
+}
+
+/* ---------- 성장 : 직업 카드 ---------- */
+.job-card {
+  --jc: var(--gold);
+  position: relative;
+  overflow: hidden;
+}
+.job-card::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--jc) 0%, transparent 70%);
+  opacity: 0.12;
+  pointer-events: none;
+}
+.job-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.job-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: rgba(10, 8, 20, 0.55);
+  border: 1px solid #3a3158;
+  box-shadow: inset 0 0 12px rgba(139, 108, 242, 0.2);
+}
+.job-info {
+  flex: 1;
+  min-width: 0;
+}
+.job-nm {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+.job-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+.jp-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #cfe0ff;
+  background: rgba(139, 108, 242, 0.16);
+  border: 1px solid rgba(139, 108, 242, 0.4);
+  border-radius: 999px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.js-list {
+  margin-top: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.js-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  background: rgba(10, 8, 20, 0.45);
+  border: 1px solid #2c2647;
+  border-radius: 7px;
+  padding: 3px 7px;
+}
+.js-row span {
+  font-size: 12px;
+}
+.js-row b {
+  color: #efe9ff;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.js-row em {
+  font-style: normal;
+  color: var(--dim);
+  margin-left: auto;
+  font-size: 9px;
+  text-align: right;
+}
+.js-row.ult {
+  border-color: rgba(245, 196, 81, 0.4);
+  background: rgba(245, 196, 81, 0.08);
+}
+.js-row.ult b {
+  color: #ffd479;
+}
+
+/* ---------- 성장 : 도감 ---------- */
+.codex-eq {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cx-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cx-lb {
+  width: 30px;
+  flex: 0 0 auto;
+  font-size: 8px;
+  color: var(--dim-2);
+  font-weight: 700;
+}
+.cx-cells {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+.cx-cell .cx-dot {
+  opacity: 0.18;
+  filter: grayscale(1);
+}
+.cx-cell {
+  position: relative;
+  height: 26px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 8, 20, 0.5);
+  border: 1px solid #2a2442;
+  opacity: 0.55;
+}
+.cx-cell.on {
+  opacity: 1;
+  border-color: var(--rc);
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--rc) 30%, transparent);
+  background: rgba(255, 255, 255, 0.04);
+}
+.cx-cell canvas,
+.cx-pet canvas {
+  image-rendering: pixelated;
+}
+.cx-q {
+  font-size: 11px;
+  font-weight: 900;
+  color: #4a4266;
+  font-family: var(--mono);
+}
+.codex-pets {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  margin-top: 6px;
+}
+.cx-pet {
+  position: relative;
+  height: 34px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 8, 20, 0.5);
+  border: 1px solid #2a2442;
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+.cx-pet.on {
+  opacity: 1;
+  filter: none;
+  border-color: var(--rc);
+  background: rgba(255, 255, 255, 0.04);
+}
+.cx-pet .cx-q {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.codex-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 9.5px;
+  color: var(--dim);
+}
+.codex-sum span {
+  background: rgba(10, 8, 20, 0.5);
+  border: 1px solid #2c2647;
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.codex-sum b {
+  color: #8fe0ff;
+  font-family: var(--mono);
+}
+.cx-full {
+  width: 100%;
+  font-size: 9px;
+  color: #ffd479;
+  font-weight: 800;
+}
+
+/* ---------- 던전 : 무한의 시련 ---------- */
+.rush-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: linear-gradient(120deg, rgba(90, 40, 120, 0.55), rgba(30, 20, 45, 0.9));
+  border: 1px solid rgba(195, 156, 255, 0.45);
+  box-shadow: inset 0 0 18px rgba(140, 90, 220, 0.2);
+}
+.rc-l {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.rc-ico {
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px rgba(195, 156, 255, 0.8));
+}
+.rc-name {
+  font-size: 12px;
+  font-weight: 900;
+  color: #e8dcff;
+}
+.rc-sub {
+  font-size: 8.5px;
+  color: #b9a7d8;
+  line-height: 1.4;
+}
+.rc-best {
+  text-align: center;
+  min-width: 34px;
+}
+.rc-best b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: #ffd479;
+  line-height: 1;
+}
+.rc-best small {
+  font-size: 7.5px;
+  color: var(--dim-2);
+}
+.rush-card .rc-go {
+  min-width: 48px;
+}
+
+/* ---------- 펫 탭 ---------- */
+.pet-equip {
+  margin-top: 2px;
+}
+.pet-empty {
+  font-size: 10.5px;
+  color: var(--dim);
+  text-align: center;
+  line-height: 1.7;
+  padding: 12px 6px;
+  border: 1px dashed #332c52;
+  border-radius: 9px;
+}
+.pet-empty b {
+  color: #ffd479;
+}
+.pe-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-radius: 10px;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.05), rgba(10, 8, 20, 0.6));
+  border: 1px solid var(--rc);
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--rc) 18%, transparent);
+}
+.pe-ic {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.1), rgba(10, 8, 20, 0.7));
+}
+.pe-ic canvas {
+  image-rendering: pixelated;
+}
+.pe-mid {
+  flex: 1;
+  min-width: 0;
+}
+.pe-nm {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #fff;
+}
+.pe-stars {
+  color: #ffd479;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.pe-rar {
+  font-size: 9px;
+  font-weight: 800;
+}
+.pe-buff {
+  font-size: 9px;
+  color: #cfe8ff;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.pe-skill {
+  font-size: 8.5px;
+  color: var(--dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.pe-off {
+  flex: 0 0 auto;
+}
+.pe-extra {
+  font-size: 8.5px;
+  color: var(--dim-2);
+  margin-top: 5px;
+  text-align: center;
+}
+.pe-extra b {
+  color: #8fe0ff;
+  font-family: var(--mono);
+}
+
+/* 상자깡 카드 */
+.gacha-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.g-card {
+  border-radius: 10px;
+  border: 1px solid #3a3158;
+  background: linear-gradient(180deg, #221d3a, #171326);
+  padding: 7px 5px 6px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.g-card.ch-wood {
+  border-color: #7a5230;
+  background: linear-gradient(180deg, #2c2118, #1a1410);
+}
+.g-card.ch-gold {
+  border-color: #b8862a;
+  background: linear-gradient(180deg, #2e2614, #1c1710);
+}
+.g-card.ch-legend {
+  border-color: #a353e0;
+  background: linear-gradient(180deg, #2a1838, #180f22);
+  box-shadow: inset 0 0 16px rgba(163, 83, 224, 0.25);
+}
+.gc-ico {
+  font-size: 22px;
+  line-height: 1.1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+.gc-nm {
+  font-size: 10px;
+  font-weight: 900;
+  margin-top: 2px;
+}
+.gc-note {
+  font-size: 7.5px;
+  color: var(--dim);
+  margin-top: 1px;
+}
+.gc-cost {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffd479;
+  margin-top: 3px;
+}
+.gc-btns {
+  display: flex;
+  gap: 3px;
+  margin-top: 5px;
+}
+.gc-btns .btn {
+  flex: 1;
+  font-size: 9px !important;
+  padding: 4px 0 !important;
+  border-radius: 6px;
+}
+.gacha-note {
+  font-size: 8.5px;
+  color: var(--dim-2);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* 조각 합성 */
+.shard-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.shard-btn {
+  border-radius: 8px;
+  border: 1px solid var(--rc);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-family: var(--font);
+  padding: 5px 2px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+}
+.shard-btn b {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--rc);
+}
+.shard-btn small {
+  font-size: 7.5px;
+  color: var(--dim);
+  font-family: var(--mono);
+}
+.shard-btn:disabled {
+  opacity: 0.35;
+}
+
+/* 보유 펫 그리드 */
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+.pet-card {
+  border-radius: 10px;
+  border: 1px solid #2c2647;
+  background: linear-gradient(180deg, #1e1a30, #15121f);
+  padding: 6px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.pet-card.on {
+  border-color: var(--rc);
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--rc) 16%, transparent);
+}
+.pet-card.eq {
+  background: linear-gradient(180deg, #26322a, #151f19);
+  border-color: #7bffd0;
+  box-shadow: 0 0 10px rgba(123, 255, 208, 0.25);
+}
+.pet-card.off {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.pc-ic {
+  height: 40px;
+  display: grid;
+  place-items: center;
+}
+.pc-ic canvas {
+  image-rendering: pixelated;
+}
+.pc-nm {
+  font-size: 10px;
+  font-weight: 900;
+  color: #fff;
+  margin-top: 1px;
+}
+.pc-rar {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--rc);
+}
+.pc-stars {
+  font-size: 8px;
+  color: #ffd479;
+  letter-spacing: 0.5px;
+}
+.pc-stars.dim {
+  color: var(--dim-2);
+}
+.pc-buff {
+  font-size: 7.5px;
+  color: var(--dim);
+  line-height: 1.35;
+  margin-top: 1px;
+  min-height: 20px;
+}
+.pc-btns {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+.pc-btns .btn {
+  flex: 1;
+  font-size: 8.5px !important;
+  padding: 4px 0 !important;
+  border-radius: 6px;
+}
+.pc-btns .btn small {
+  font-size: 7px;
+}
+
+/* ---------- 상자깡 연출 ---------- */
+.gacha {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(40, 20, 60, 0.92), rgba(4, 3, 8, 0.97));
+  backdrop-filter: blur(3px);
+}
+.gacha.on {
+  display: flex;
+  animation: fadeIn 0.18s ease-out;
+}
+.gacha-box {
+  width: 92%;
+  max-height: 88%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.g-stage {
+  position: relative;
+  width: 100%;
+  height: 176px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.g-chest {
+  font-size: 70px;
+  line-height: 1;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.7));
+  animation: chestShake 0.28s infinite;
+  z-index: 3;
+  transition: transform 0.3s;
+}
+.g-stage.open .g-chest {
+  animation: chestJump 0.55s ease-out forwards;
+}
+@keyframes chestShake {
+  0%, 100% { transform: rotate(-6deg) scale(1); }
+  50% { transform: rotate(6deg) scale(1.05); }
+}
+@keyframes chestJump {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.45) rotate(-8deg); }
+  70% { transform: scale(1.2) rotate(6deg); }
+  100% { transform: scale(1.18) rotate(0deg); }
+}
+.g-rays {
+  position: absolute;
+  inset: -30% -10%;
+  opacity: 0;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 220, 140, 0) 0deg,
+    rgba(255, 220, 140, 0.28) 12deg,
+    rgba(255, 220, 140, 0) 26deg,
+    rgba(255, 220, 140, 0.2) 40deg,
+    rgba(255, 220, 140, 0) 54deg
+  );
+  transition: opacity 0.4s;
+  animation: raySpin 9s linear infinite;
+}
+.gacha.reveal .g-rays {
+  opacity: 0.55;
+}
+@keyframes raySpin {
+  to { transform: rotate(360deg); }
+}
+.g-burst {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 250, 210, 0.95), rgba(255, 200, 90, 0.35) 40%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.gacha.reveal .g-burst {
+  animation: burstPop 0.6s ease-out;
+}
+.gacha.reveal .g-chest {
+  filter: drop-shadow(0 0 26px rgba(255, 220, 140, 0.85));
+}
+@keyframes burstPop {
+  0% { transform: scale(0.2); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.g-title {
+  position: absolute;
+  bottom: 2px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe9a8;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  z-index: 4;
+  text-align: center;
+  width: 100%;
+}
+.g-result {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+  overflow-y: auto;
+  max-height: 300px;
+  padding: 2px;
+}
+.g-res {
+  border-radius: 8px;
+  border: 1px solid var(--rc);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(8, 6, 14, 0.85));
+  padding: 4px 2px;
+  text-align: center;
+  opacity: 0;
+  animation: resIn 0.3s ease-out forwards;
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--rc) 22%, transparent);
+}
+.g-res.new {
+  border-width: 2px;
+}
+@keyframes resIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+.gr-ic {
+  display: grid;
+  place-items: center;
+  height: 36px;
+}
+.gr-ic canvas {
+  image-rendering: pixelated;
+}
+.gr-nm {
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+.gr-rar {
+  font-size: 7px;
+  font-weight: 800;
+  color: var(--rc);
+}
+.gr-tag {
+  font-size: 6.5px;
+  color: #ffd479;
+  font-weight: 800;
+}
+
+/* ---------- 직업 선택 ---------- */
+.jobpick {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  display: none;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #241a3c 0%, #0d0a16 55%, #07060b 100%);
+}
+.jobpick.on {
+  display: flex;
+  animation: fadeIn 0.25s ease-out;
+}
+.jp-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 12px 12px;
+}
+.jp-head {
+  text-align: center;
+  flex: 0 0 auto;
+}
+.jp-crest {
+  font-size: 18px;
+  color: #ffd479;
+  text-shadow: 0 0 12px rgba(245, 196, 81, 0.8);
+}
+.jp-head h2 {
+  font-size: 16px;
+  margin: 2px 0 4px;
+  letter-spacing: -0.4px;
+  color: #fff;
+}
+.jp-sub {
+  font-size: 9.5px;
+  color: var(--dim);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.jp-sub b {
+  color: #ffd479;
+}
+.jp-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+.jp-list::-webkit-scrollbar {
+  display: none;
+}
+.jp-card {
+  --jc: var(--gold);
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid #332c52;
+  background: linear-gradient(150deg, #1e1932, #141020);
+  padding: 8px 9px;
+  color: var(--text);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s, box-shadow 0.2s;
+}
+.jp-card:active {
+  transform: scale(0.985);
+}
+.jp-card.sel {
+  border-color: var(--jc);
+  box-shadow: 0 0 0 1px var(--jc), 0 0 18px color-mix(in srgb, var(--jc) 30%, transparent);
+  background: linear-gradient(150deg, #262040, #171226);
+}
+.jc-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.jc-art {
+  width: 62px;
+  height: 78px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.08), rgba(8, 6, 14, 0.6));
+  border: 1px solid #2c2647;
+}
+.jc-art canvas {
+  image-rendering: pixelated;
+}
+.jc-title {
+  flex: 1;
+  min-width: 0;
+}
+.jc-nm {
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+}
+.jc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.jc-desc {
+  font-size: 9px;
+  color: var(--dim);
+  line-height: 1.5;
+  margin: 5px 0 4px;
+}
+.jc-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
+.jp-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  color: var(--dim-2);
+}
+.jp-bar > span {
+  width: 22px;
+  flex: 0 0 auto;
+}
+.jp-bar i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.jp-bar i b {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+.jc-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+.jc-skill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  background: rgba(8, 6, 14, 0.5);
+  border-radius: 6px;
+  padding: 2px 6px;
+  border: 1px solid #282242;
+}
+.jc-skill b {
+  font-weight: 800;
+  color: #e8e2ff;
+}
+.jc-skill em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 8px;
+  color: var(--dim);
+  text-align: right;
+}
+.jc-skill.ult {
+  border-color: rgba(245, 196, 81, 0.4);
+}
+.jc-skill.ult b {
+  color: #ffd479;
+}
+.jp-foot {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+.jp-foot .boot-btn {
+  flex: 1;
+  font-size: 13px;
+  padding: 12px 0;
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+.jp-foot .boot-btn:disabled {
+  opacity: 0.4;
+}
+.jp-foot .boot-btn.ghost {
+  flex: 0 0 84px;
+}
+
+.g-result.few {
+  max-width: 150px;
+  margin: 0 auto;
+}
+
+.gacha.reveal .g-stage {
+  height: 124px;
+}
+.gacha.reveal .g-chest {
+  font-size: 46px;
+}
+.gacha.reveal .g-burst {
+  width: 130px;
+  height: 130px;
 }
